@@ -1,0 +1,42 @@
+{% extends "home.html" %}
+
+{% block menu %}
+    <li><a href="{% url 'index' %}">Home</a></li>
+    <li><a href="{% url 'crawl' %}">Crawl</a></li>
+    <li><a href="{% url 'keyword_list' %}">Keyword_list</a></li>
+    <li><a href="{% url 'sentiment' %}">Sentiment</a></li>
+    <li class="current_page_item"><a href="{% url 'keyword' %}">Keyword</a></li>
+{% endblock %}
+
+{% block content %}
+
+  <h1>關鍵字擷取: </h1>
+ 
+    {% for l,review in key.items %}
+    <div>
+          <span style="font-size:30px;">{{ l }}</span><br>
+          <!-- <li>
+              {{review}}
+          </li> -->
+          {% for comment in review %}
+              {% if comment|length == 0 %}
+                  &nbsp&nbsp&nbsp&nbsp&nbsp沒有符合的關鍵字
+              {% else %}
+                  {% for sentence in comment %}
+                    <form>
+                        <select name="YourLocation">
+                        　<option value="spa">spa</option>
+                        　<option value="gym">gym</option>
+                        　<option value="breakfast">breakfast</option>
+                        　<option value="freebies">freebies</option>
+                        </select>  {{sentence}}
+                    </form>
+                  {% endfor %}
+              {% endif %}
+          {% endfor %}
+    </div>
+    {% endfor %}
+
+  
+
+{% endblock %}

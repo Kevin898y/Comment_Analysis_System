@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"></html>
+<head>
+<meta name="keywords" content="" />
+<meta name="description" content="" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<title>Comment Analysis System</title>
+<link href="http://fonts.googleapis.com/css?family=Arvo" rel="stylesheet" type="text/css" />
+<link href="http://fonts.googleapis.com/css?family=Coda:400,800" rel="stylesheet" type="text/css" />
+{% load static %}
+<link href="{% static 'css/style.css' %}" rel="stylesheet" type="text/css" media="screen" />
+</head>
+<body>
+
+<div id="menu-wrapper">
+	<div id="menu">
+		<ul>
+			{% block menu %}
+				<li class="current_page_item"><a href="{% url 'index' %}">Home</a></li>
+				<li><a href="{% url 'crawl' %}">Crawl</a></li>
+				<li><a href="{% url 'keyword_list' %}">Keyword list</a></li>
+				<li><a href="{% url 'sentiment' %}">Sentiment</a></li>
+				<li><a href="{% url 'keyword' %}">Keyword</a></li>
+			{% endblock %}
+		</ul>
+	</div>
+	<!-- end #menu -->
+</div>
+
+{% block title %}
+<div id="header-wrapper">
+	<div id="header">
+		<div id="logo">
+			<h1><a href="#"> <p>Comment <span>Analysis</p></span></a></h1>
+			<!-- <p>Design by <a href="http://templated.co" rel="nofollow">TEMPLATED</a></p> -->
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+<!-- {% load static %}
+<div id="banner"><img src="{% static 'images/img04.jpg' %}" width="1000" height="350" alt="" /></div> -->
+
+{% block content %}
+
+<center>
+<h2>Searh Here:</h2>
+<div id="search" >
+	<form method="post" id="search-text">
+		<table >
+			{% csrf_token %}
+			{{ form.as_table }}
+		</table>
+		<input type="submit" value="Submit">
+		
+	</form>
+</div>
+</center>
+
+{% endblock %}
+
+
+<pre>
+
+
+
+
+</pre>
+
+<div id="footer">
+	<p>&copy; Untitled. | Photos by <a href="http://fotogrph.com/">Fotogrph</a> | Design by <a href="http://templated.co" rel="nofollow">TEMPLATED</a>.</p>
+</div>
+<!-- end #footer -->
+</body>
+</html>

@@ -1,0 +1,23 @@
+{% extends "home.html" %}
+
+{% block menu %}
+    <li><a href="{% url 'index' %}">Home</a></li>
+    <li><a href="{% url 'crawl' %}">Crawl</a></li>
+    <li><a href="{% url 'keyword_list' %}">Keyword_list</a></li>
+    <li class="current_page_item"><a href="{% url 'sentiment' %}">Sentiment</a></li>
+    <li><a href="{% url 'keyword' %}">Keyword</a></li>
+{% endblock %}
+
+{% block content %}
+
+  <h1>情緒分析結果: </h1>
+
+  <ul>
+    {% for review,l in Dict.items %}
+      <li>
+          {{ l }}: {{review}}
+      </li>
+    {% endfor %}
+  </ul>
+
+{% endblock %}
