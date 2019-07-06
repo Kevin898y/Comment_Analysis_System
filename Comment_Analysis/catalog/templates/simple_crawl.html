@@ -8,15 +8,58 @@
     <li><a href="{% url 'keyword' %}">Keyword</a></li>
 {% endblock %}
 
-{% block content %}
 
-  <h1>爬取的評論是</h1>
-  <ul>
-      {% for review in s %}
-        <li>
-          {{ review }}
-        </li>
-      {% endfor %}
-  </ul>
+{% block title %}
+<div id="header-wrapper">
+	<div id="header">
+		<div id="logo">
+			<h1><a href="#"> <p>Co<span>mment</p></span></a></h1>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+
+{% block content %}
+<head>
+  <meta charset="utf-8" />
+  <title>Client Side jQuery DataTables</title>
+  <!--引用css-->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css" />
+</head>
+
+<body>
+  <table id="myDataTalbe"  class="display"  >
+      <thead>
+
+          <tr>
+              <th>Comment</th>
+          </tr>
+      </thead>
+      <tbody>
+          {% for review in s %}
+              <tr>
+                  <td align="center">{{review}}</td>
+              </tr>
+          {% endfor %} 
+      </tbody>
+  </table>
+  <!--引用jQuery-->
+  <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+  <!--引用dataTables.js-->
+  <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+   
+  <script type="text/javascript">
+      $(function () {
+
+          $("#myDataTalbe").DataTable({
+              searching: false, //關閉filter功能
+              columnDefs: [{
+             
+              }]
+          });
+      });
+  </script>
+</body>
 
 {% endblock %}

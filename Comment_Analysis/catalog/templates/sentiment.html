@@ -8,16 +8,61 @@
     <li><a href="{% url 'keyword' %}">Keyword</a></li>
 {% endblock %}
 
+{% block title %}
+<div id="header-wrapper">
+	<div id="header">
+		<div id="logo">
+			<h1><a href="#"> <p>Sentiment <span>Analysis</p></span></a></h1>
+			<!-- <p>Design by <a href="http://templated.co" rel="nofollow">TEMPLATED</a></p> -->
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+
 {% block content %}
+<head>
+  <meta charset="utf-8" />
+  <title>Client Side jQuery DataTables</title>
+  <!--引用css-->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css" />
+</head>
 
-  <h1>情緒分析結果: </h1>
+<body>
+  <table id="myDataTalbe"  class="display"  >
+      <thead>
 
-  <ul>
-    {% for review,l in Dict.items %}
-      <li>
-          {{ l }}: {{review}}
-      </li>
-    {% endfor %}
-  </ul>
+          <tr>
+              <th>Sentiment</th>
+              <th>Comment</th>
+          </tr>
+      </thead>
+      <tbody>
+          {% for review,l in Dict.items %}
+              <tr>
+                  <td align="center">{{l}}</td>
+                  <td align="center">{{review}}</td>
+              </tr>
+          {% endfor %} 
+      </tbody>
+  </table>
+  <!--引用jQuery-->
+  <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+  <!--引用dataTables.js-->
+  <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+   
+  <script type="text/javascript">
+      $(function () {
+
+          $("#myDataTalbe").DataTable({
+              searching: false, //關閉filter功能
+              columnDefs: [{
+             
+              }]
+          });
+      });
+  </script>
+</body>
+
 
 {% endblock %}
