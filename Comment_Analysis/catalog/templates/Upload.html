@@ -1,0 +1,25 @@
+{% extends "home.html" %}
+
+{% block menu %}
+    <li><a href="{% url 'index' %}">Home</a></li>
+    <li ><a href="{% url 'crawl' %}">Crawl</a></li>
+    <li  class="current_page_item"><a href="{% url 'upload' %}">Split</a></li>
+    <li><a href="{% url 'keyword_list' %}">Keyword_list</a></li>
+    <li><a href="{% url 'sentiment' %}">Sentiment</a></li>
+    <li><a href="{% url 'keyword' %}">Keyword</a></li>
+{% endblock %}
+
+{% block title %}
+
+{% endblock %}
+
+{% block content %}
+
+<form enctype="multipart/form-data" method="post" id="search-text">
+        <table >
+            {% csrf_token %}
+            {{form.as_table}}
+        </table>
+        <input type="submit" value="Submit">
+ </form>
+ {% endblock %}

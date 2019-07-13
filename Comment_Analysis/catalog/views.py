@@ -10,9 +10,11 @@ import pke
 from nltk.corpus import stopwords
 
 from catalog.forms import SearchForm
+from catalog.forms import CheckForm
+from catalog.forms import UploadFileForm
 
-ke = Keyword_Extraction('wordtovector/GoogleNews-vectors-negative300.bin','data/keyword.csv','1')
-sen = Review_Sentiment('model/tokenizer.p','model/sentimental.h5')
+# ke = Keyword_Extraction('wordtovector/GoogleNews-vectors-negative300.bin','data/keyword.csv','1')
+# sen = Review_Sentiment('model/tokenizer.p','model/sentimental.h5')
 
 def Search(request):
 
@@ -34,6 +36,52 @@ def Search(request):
         'form': form,
     }
     return render(request, 'home.html', context)
+def upload_file(request):
+    if request.method == 'POST':
+        form = UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            f = request.FILES['file']
+            print(f.name)
+            review = pd.read_csv(f)
+            review.to_csv('split.csv',index = False)
+           
+            return HttpResponseRedirect('/catalog/split')
+    else:
+        form = UploadFileForm()
+       
+    return render(request, 'Upload.html', {'form': form})
+
+def Split(request):
+    if request.method == 'POST':
+        form = CheckForm(request.POST)
+
+        if form.is_valid():
+            c = request.POST.getlist('check')
+            review = pd.read_csv('split.csv')
+            raw_data= {'label':[], 'comm':[]}
+            print(c)
+            for split,review in zip(c,review['comm']):
+                if(split=='false'):
+                    raw_data['label'].append(0)
+                    raw_data['comm'].append(review)
+                elif(split=='true'):
+                    raw_data['label'].append(1)
+                    raw_data['comm'].append(review)
+            
+            df = pd.DataFrame(raw_data, columns = ['label','comm'])
+            df.to_csv('splitSentence.csv',index =False)
+
+            return HttpResponseRedirect('/catalog/upload')
+    else:
+        form = CheckForm()
+
+    review = pd.read_csv('split.csv')
+    s = review['comm']
+    context = {
+        'form': form,
+        's':s,
+    }
+    return render(request, 'Split.html', context)
 
 def simple_crawl(request):
     # url = 'https://www.booking.com/hotel/gb/italianflat-brompton.en-gb.html?aid=304142;label=gen173nr-1FCAEoggI46AdIM1gEaOcBiAEBmAEwuAEXyAEM2AEB6AEB-AELiAIBqAID;sid=d1c049c0e9123fddfa3b6174f141e95b;dest_id=-2601889;dest_type=city;dist=0;hapos=3;hpos=3;room1=A%2CA;sb_price_type=total;sr_order=popularity;srepoch=1550862196;srpvid=12a885fa98b8042d;type=total;ucfs=1&#hotelTmplhttps://www.booking.com/hotel/gb/italianflat-brompton.en-gb.html?aid=304142;label=gen173nr-1FCAEoggI46AdIM1gEaOcBiAEBmAEwuAEXyAEM2AEB6AEB-AELiAIBqAID;sid=d1c049c0e9123fddfa3b6174f141e95b;dest_id=-2601889;dest_type=city;dist=0;hapos=3;hpos=3;room1=A%2CA;sb_price_type=total;sr_order=popularity;srepoch=1550862196;srpvid=12a885fa98b8042d;type=total;ucfs=1&#hotelTmpl'
@@ -48,21 +96,20 @@ def simple_crawl(request):
     return render(request,'simple_crawl.html',locals())
 
 def sentiment(request):
-    # sen = Review_Sentiment('model/tokenizer.p','model/sentimental.h5')
-    # global graph 
-    # with graph[0].as_default():
     review = pd.read_csv('review.csv')
-    # print(review['comm'])
-    rs = sen.Sentiment(review['comm'])
-    df = sen.to_csv(rs,review)
+ 
+
+
+    # rs = sen.Sentiment(review['comm'])
+    # df = sen.to_csv(rs,review)
     
-    label = df['label']
-    comm = df['comm']
-    Dict = {}
+    # label = df['label']
+    # comm = df['comm']
+    # Dict = {}
     
-    for i,j in zip(label,comm):
+    # for i,j in zip(label,comm):
     
-        Dict[j]=i
+    #     Dict[j]=i
  
     return render(request,'sentiment.html',locals())
 
@@ -88,11 +135,10 @@ def keyword_list(request):
     return render(request,'Keyword_List.html',context)
     
 def keyword(request):
-    # ke = Keyword_Extraction('wordtovector/GoogleNews-vectors-negative300.bin','data/keyword.csv','review_label.csv')
     
-    ke.final_comm = {}
-    ke.review = pd.read_csv('review_label.csv')
-    ke.cal_sim()
-    key = ke.final_comm
+    # ke.final_comm = {}
+    # ke.review = pd.read_csv('review_label.csv')
+    # ke.cal_sim()
+    # key = ke.final_comm
 
     return render(request,'Keyword_Extraction.html',locals())
