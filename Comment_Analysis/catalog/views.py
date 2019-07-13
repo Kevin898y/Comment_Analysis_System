@@ -15,7 +15,7 @@ from catalog.forms import UploadFileForm
 
 # ke = Keyword_Extraction('wordtovector/GoogleNews-vectors-negative300.bin','data/keyword.csv','1')
 # sen = Review_Sentiment('model/tokenizer.p','model/sentimental.h5')
-
+filename= '' 
 def Search(request):
 
     if request.method == 'POST':
@@ -41,7 +41,9 @@ def upload_file(request):
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             f = request.FILES['file']
-            print(f.name)
+            global filename
+            filename = f.name
+            print(filename)
             review = pd.read_csv(f)
             review.to_csv('split.csv',index = False)
            
@@ -60,6 +62,7 @@ def Split(request):
             review = pd.read_csv('split.csv')
             raw_data= {'label':[], 'comm':[]}
             print(c)
+
             for split,review in zip(c,review['comm']):
                 if(split=='false'):
                     raw_data['label'].append(0)
@@ -67,9 +70,9 @@ def Split(request):
                 elif(split=='true'):
                     raw_data['label'].append(1)
                     raw_data['comm'].append(review)
-            
+            global filename
             df = pd.DataFrame(raw_data, columns = ['label','comm'])
-            df.to_csv('splitSentence.csv',index =False)
+            df.to_csv(filename[0:-4]+'_label.csv',index =False)
 
             return HttpResponseRedirect('/catalog/upload')
     else:
