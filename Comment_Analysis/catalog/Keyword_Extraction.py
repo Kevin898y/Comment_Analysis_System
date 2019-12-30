@@ -43,7 +43,7 @@ class Keyword_Extraction:
             "\U0001F917"
                                "]+"
            , flags=re.UNICODE)
-        return emoji_pattern.sub(r' ', text)
+        return emoji_pattern.sub(r' ', text).strip()
     def set_comm_class(self):
         for i in self.keyword['keyword']:
             self.comm_class[i] = []
@@ -73,7 +73,7 @@ class Keyword_Extraction:
                     embedding_vector = np.zeros(300)
                 comm_embedding.append(embedding_vector)
 
-            comm_embedding = np.array(comm_embedding)
+            comm_embedding = np.array(comm_embedding) 
             dis = cosine_similarity(comm_embedding, self.key_embedding)
             max_sim = np.max(dis)
             if max_sim>0.5:

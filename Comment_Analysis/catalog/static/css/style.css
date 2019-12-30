@@ -176,6 +176,85 @@ a:hover {
 	line-height:50px; 
 	border-right: 1px solid #FFFFFF;
 }
+/* keyword */
+
+#keyword-wrapper {
+	overflow: hidden;
+	height: 56px;
+	background: #EDEDED;
+}
+
+#keyword {
+	width: 1000px;
+	height: 55px;
+	margin: 0px auto;
+	padding: 0px;
+}
+
+#keyword ul {
+	margin: 0;
+	padding: 0px;
+	list-style: none;
+	line-height: normal;
+}
+
+#keyword li {
+	float: left;
+	border-right: 1px solid #FFFFFF;
+}
+
+
+#keyword a {
+	display: block;
+	letter-spacing: 1px;
+	line-height: 30px;
+	padding: 0px 15px;
+	text-decoration: none;
+	text-align: center;
+	text-transform: uppercase;
+	font-family: 'Arvo', serif;
+	font-size: 12px;
+	font-weight: normal;
+	color: #3B3B3B;
+	border: none;
+}
+
+#keyword a:hover, #keyword .current_page_item a {
+	background: #0193CC;
+	text-decoration: none;
+	color: #FFFFFF;
+}
+
+#keyword .current_page_item a {
+	background: #0193CC;
+}
+
+/* #keyword a.advantage:hover {
+	background: #0193CC;
+	text-decoration: none;
+	color: #FFFFFF;
+} */
+/* #keyword .advantage a {
+	background: #0193CC;
+} */
+#keyword a.advantage:hover {
+	background: rgb(158, 228, 255);
+	text-decoration: none;
+	color: #0193CC;
+}
+#keyword a.advantage  {
+	
+	color: #0193CC;
+}
+#keyword a.disadvantage:hover {
+	background: rgb(255, 158, 158);
+	text-decoration: none;
+	color: rgb(255, 0, 0);
+}
+#keyword a.disadvantage  {
+	
+	color: rgb(255, 0, 0);
+}
 
 /* Menu */
 

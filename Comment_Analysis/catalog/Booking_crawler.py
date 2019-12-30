@@ -7,6 +7,9 @@ from tqdm import tqdm
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 import nltk.data
+from .Split_Class import Bert_Split
+
+
 
 class Booking_crawler:
     def __init__(self,url):
@@ -29,7 +32,7 @@ class Booking_crawler:
     
     def Find_Review_Url(self):
         urlbase1 = 'https://www.booking.com/reviewlist.en-gb.html?'
-        urlbase2 = 'cc1=gb;dist=1;'
+        urlbase2 = 'cc1=pl;dist=1;'  ##gb
         urlbase3 = 'r_lang=en;'
         urlbase4 = 'type=total&;offset=0;rows=10'
         pattern_start = self.url.find('aid=')
@@ -38,7 +41,7 @@ class Booking_crawler:
         pattern = self.url[pattern_start:pattern_start+temp+pattern_end+1]
         pattern = pattern.replace('&', ';')
 
-        pagename_start = self.url.find('gb/')
+        pagename_start = self.url.find('pl/')
         pagename_end = self.url[pagename_start:].find('.en-gb')
         pagename = self.url[pagename_start+3 : pagename_start+pagename_end]
 
@@ -46,18 +49,8 @@ class Booking_crawler:
         srpvid_end = self.url[srpvid_start:].find(';')
         srpvid = self.url[srpvid_start:srpvid_start+srpvid_end+1] 
         self.url = urlbase1+pattern+urlbase2+'pagename='+pagename+';'+urlbase3+srpvid+urlbase4
-    def splitSentence(self,paragraph):
-        tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-        sentences = tokenizer.tokenize(paragraph)
-        Clauses = []
-        for i in sentences:
-            Clause = i.split(',')
-            for j in Clause:
-                Clauses.append(self.remove_emoji(j).strip())
-        return Clauses
     def remove_emoji(self,text):
         emoji_pattern = re.compile(
-            "[\s+\.\!\/_,\-$%^*()+\"]+|[+——！，。？、~@#￥%……&*（）“”＆、‘’；：]+|"
             "["
             "\U0001F600-\U0001F64F"  # emoticons
             "\U0001F300-\U0001F5FF"  # symbols & pictographs
@@ -66,7 +59,16 @@ class Booking_crawler:
             "\U0001F917"
                                "]+"
            , flags=re.UNICODE)
-        return emoji_pattern.sub(r' ', text)
+        return emoji_pattern.sub(r' ', text).strip()
+    def splitSentence(self,paragraph):
+        tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+        sentences = tokenizer.tokenize(paragraph)
+        Clauses = []
+        for i in sentences:
+            temp = self.remove_emoji(i)
+            if len(temp) > 1:
+                Clauses.append(temp)
+        return Clauses
     def ToCSV(self):
         review = pd.read_csv('review.csv')
         raw_data= {'label':[],'comm':[]}
@@ -74,15 +76,18 @@ class Booking_crawler:
             label = int(label)
             comm = self.splitSentence(str(comm))
             for j in comm:
-                if j != 'Nothing' and j!='N/a' and j != 'N/A' and j!= 'n/a' and j != 'n/A' and j!='nan':
+                if j != 'Nothing' and j!='N/a' and j != 'N/A' and j!= 'n/a' and j != 'n/A' and j!='nan' and len(j)>0:
                     # j = self.remove_emoji(str(j))
                     raw_data['label'].append(label)
                     raw_data['comm'].append(str(j))
         df = pd.DataFrame(raw_data, columns = ['label','comm'])
         df.to_csv('review.csv',index = False)
+        # 分割句子
+        split = Bert_Split('split2.pkl','review.csv')
+        p = split.prediction()
+        df = split.split(p)
+        df.to_csv('temp.csv',index = False)
         return df
-   
-        
 
     def Scrapy_Review(self):
         self.Find_Review_Url()
@@ -112,7 +117,7 @@ class Booking_crawler:
                     if j != None:
                         j = j.get_text()
                         j = re.sub('\r|\n', '', j)
-                        if j != 'There are no comments available for this review':
+                        if j != 'There are no comments available for this review' and len(j)>0:
                             raw_data['comm'].append(j)
                             if(i.find('svg',class_='bk-icon -iconset-review_great c-review__icon')  !=None ):     
                                 raw_data['label'].append(1)

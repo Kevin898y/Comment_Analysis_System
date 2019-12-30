@@ -2,12 +2,13 @@
 
 {% block menu %}
     <li><a href="{% url 'index' %}">Home</a></li>
-    <li ><a href="{% url 'crawl' %}">Crawl</a></li>
-    <li  class="current_page_item"><a href="{% url 'upload' %}">Split</a></li>
+    <li  class="current_page_item"><a href="{% url 'crawl' %}">Crawl</a></li>
+    <li><a href="{% url 'upload' %}">Split</a></li>
     <li><a href="{% url 'keyword_list' %}">Keyword_list</a></li>
     <li><a href="{% url 'sentiment' %}">Sentiment</a></li>
     <li><a href="{% url 'keyword' %}">Keyword</a></li>
 {% endblock %}
+
 
 {% block title %}
 <div id="header-wrapper">
@@ -21,14 +22,6 @@
 
 
 {% block content %}
-
-<!-- <form method="post" id="search-text">
-        <table >
-            {% csrf_token %}
-            {{form.check}}
-        </table>
-        <input type="submit" value="Submit">
- </form> -->
 <head>
   <meta charset="utf-8" />
   <title>Client Side jQuery DataTables</title>
@@ -37,63 +30,36 @@
 </head>
 
 <body>
-<form id="frm" action="" method="post"> 
-  {%csrf_token%}
-  <table id="myDataTalbe"  class="display"   >
+  <table id="myDataTalbe"  class="display"  >
       <thead>
+
           <tr>
-              <th>Split</th>
               <th>Comment</th>
           </tr>
       </thead>
       <tbody>
-        
-          
           {% for review in s %}
               <tr>
-                  <!-- <td><input type="checkbox" name="checks" id="1" value="data31" /></td> -->
-                  <td align="center"> {{form.check}} </td>
                   <td align="center">{{review}}</td>
               </tr>
           {% endfor %} 
-          
       </tbody>
   </table>
-  <input type="submit" value="Submit">
-</form>
-  
   <!--引用jQuery-->
   <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
   <!--引用dataTables.js-->
   <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
    
   <script type="text/javascript">
-  
+      $(function () {
 
-    $(document).ready(function (){
-        var table = $('#myDataTalbe').DataTable();
-        $('#frm').on('submit', function(e){
-            $('#myDataTalbe').DataTable().destroy();
-            // var form = this;
-            // // Encode a set of form elements from all pages as an array of names and values
-            // var params = table.$('input,select,textarea').serializeArray();
-
-            // // Iterate over all form elements
-            // $.each(params, function(){
-            //     // If element doesn't exist in DOM
-            //     if(!$.contains(document, form[this.name])){
-            //         // Create a hidden element
-            //         $(form).append(
-            //             $('<input>')
-            //             .attr('type', 'hidden')
-            //             .attr('name', this.name)
-            //             .val(this.value)
-            //         );
-            //     }
-            // });
-        });
-
-    });
+          $("#myDataTalbe").DataTable({
+              searching: false, //關閉filter功能
+              columnDefs: [{
+             
+              }]
+          });
+      });
   </script>
 </body>
 

@@ -14,7 +14,12 @@ import pickle
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-
+import keras.backend.tensorflow_backend as KTF
+import tensorflow as tf
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.333
+session = tf.Session(config=config)
+KTF.set_session(session)
 # In[9]:
 
 
@@ -23,7 +28,9 @@ class Review_Sentiment:
         self.tokenizer = pickle.load(open(tokenizer_path,'rb'))
         self.MAX_SEQUENCE_LENGTH = 1000
         self.model = load_model(model_path)
-        self.Sentiment('Apple')
+        self.dict = {}
+        print(self.Sentiment('Apple'))
+
     def Sentiment(self,texts):
         seq = self.tokenizer.texts_to_sequences(texts)
         seq = pad_sequences(seq, maxlen=self.MAX_SEQUENCE_LENGTH)
@@ -35,9 +42,22 @@ class Review_Sentiment:
             raw_data['comm'].append(comm)
 
         df = pd.DataFrame(raw_data, columns = ['label','comm'])
+        Filter_advantage = df['label']==1
+        Filter_disadvantage = df['label']==0
+        disadvantage = df[Filter_disadvantage]
+        advantage = df[Filter_advantage]
         df.to_csv('review_label.csv',index = False)
+        disadvantage.to_csv('disadvantage.csv',index = False)
+        advantage.to_csv('advantage.csv',index = False)
+        self.data = df
+
+        label = df['label']
+        comm = df['comm']
         
-        return df
+        for i,j in zip(label,comm):
+            self.dict[j]=i
+        
+        return raw_data
 
 
 # In[ ]:

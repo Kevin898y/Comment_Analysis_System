@@ -1,6 +1,8 @@
 from .Booking_crawler import Booking_crawler
 from .Review_Sentiment import Review_Sentiment
 from .Keyword_Extraction import Keyword_Extraction
+from .BERT_NER import Bert_NER
+from .Keyword_Merge import Keyword_Merge
 from django.shortcuts import render
 import pandas as pd
 from django.shortcuts import render, get_object_or_404
@@ -8,26 +10,28 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 import pke
 from nltk.corpus import stopwords
-
+import numpy as np
 from catalog.forms import SearchForm
 from catalog.forms import CheckForm
 from catalog.forms import UploadFileForm
+from pip._vendor.html5lib.filters.sanitizer import Filter
 
 # ke = Keyword_Extraction('wordtovector/GoogleNews-vectors-negative300.bin','data/keyword.csv','1')
-# sen = Review_Sentiment('model/tokenizer.p','model/sentimental.h5')
+good_ner = Bert_NER('model/NER3.pkl','test_data.csv')
+bad_ner = Bert_NER('model/NER3.pkl','test_data.csv') 
+sen = Review_Sentiment('model/tokenizer.p','model/sentimental.h5')
+merge = Keyword_Merge('booking_word2vec.model')
+
 filename= '' 
 def Search(request):
-
     if request.method == 'POST':
         form = SearchForm(request.POST)
-
         if form.is_valid():
             url = form.cleaned_data['booking_url']
             crawler = Booking_crawler(url)
             crawler.Scrapy_Review()
             review =crawler.ToCSV()
             s = review['comm']
-
             return render(request,'simple_crawl.html',locals())
     else:
         form = SearchForm(initial={'booking_url': 'url'})
@@ -36,6 +40,32 @@ def Search(request):
         'form': form,
     }
     return render(request, 'home.html', context)
+    
+def top1(request, id): #to do
+    temp = id
+    if id >5:
+        id -= 6
+        if id == 5:
+            keycomm = sen.dict
+        else:
+            Filter = bad_ner.sentence_label ['label']==bad_ner.keyword_top5[id]
+            keycomm = bad_ner.sentence_label[Filter]['comm'].tolist()
+    else :
+        if id == 5:
+            keycomm = sen.dict
+        else:
+            Filter = good_ner.sentence_label ['label']==good_ner.keyword_top5[id]
+            keycomm = good_ner.sentence_label[Filter]['comm'].tolist()
+    context = {
+        'good_keyword_top5': good_ner.keyword_top5,
+        'bad_keyword_top5': bad_ner.keyword_top5,
+        'data':keycomm,
+        'id':temp,
+    }
+
+    return render(request,'NER.html',context)
+
+
 def upload_file(request):
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
@@ -47,13 +77,12 @@ def upload_file(request):
             review = pd.read_csv(f)
             review.to_csv('split.csv',index = False)
            
-            return HttpResponseRedirect('/catalog/split')
+            return HttpResponseRedirect('/catalog/split_label')
     else:
         form = UploadFileForm()
        
     return render(request, 'Upload.html', {'form': form})
-
-def Split(request):
+def Split_Label(request):
     if request.method == 'POST':
         form = CheckForm(request.POST)
 
@@ -84,13 +113,12 @@ def Split(request):
         'form': form,
         's':s,
     }
-    return render(request, 'Split.html', context)
+    return render(request, 'Split_Label.html', context)
 
-def simple_crawl(request):
+def simple_crawl(request):  #not use
     # url = 'https://www.booking.com/hotel/gb/italianflat-brompton.en-gb.html?aid=304142;label=gen173nr-1FCAEoggI46AdIM1gEaOcBiAEBmAEwuAEXyAEM2AEB6AEB-AELiAIBqAID;sid=d1c049c0e9123fddfa3b6174f141e95b;dest_id=-2601889;dest_type=city;dist=0;hapos=3;hpos=3;room1=A%2CA;sb_price_type=total;sr_order=popularity;srepoch=1550862196;srpvid=12a885fa98b8042d;type=total;ucfs=1&#hotelTmplhttps://www.booking.com/hotel/gb/italianflat-brompton.en-gb.html?aid=304142;label=gen173nr-1FCAEoggI46AdIM1gEaOcBiAEBmAEwuAEXyAEM2AEB6AEB-AELiAIBqAID;sid=d1c049c0e9123fddfa3b6174f141e95b;dest_id=-2601889;dest_type=city;dist=0;hapos=3;hpos=3;room1=A%2CA;sb_price_type=total;sr_order=popularity;srepoch=1550862196;srpvid=12a885fa98b8042d;type=total;ucfs=1&#hotelTmpl'
     # url = request
     # temp = tes
-
     # crawler = Booking_crawler(url)
     # crawler.Scrapy_Review()
     review = pd.read_csv('review.csv')
@@ -99,22 +127,41 @@ def simple_crawl(request):
     return render(request,'simple_crawl.html',locals())
 
 def sentiment(request):
-    review = pd.read_csv('review.csv')
- 
-
-
-    # rs = sen.Sentiment(review['comm'])
-    # df = sen.to_csv(rs,review)
+    review = pd.read_csv('temp.csv')
+    rs = sen.Sentiment(review['comm'])
+    df = sen.to_csv(rs,review)
     
-    # label = df['label']
-    # comm = df['comm']
-    # Dict = {}
+    label = df['label']
+    comm = df['comm']
+    Dict = {}
     
-    # for i,j in zip(label,comm):
-    
-    #     Dict[j]=i
+    for i,j in zip(label,comm):
+        Dict[j]=i
  
     return render(request,'sentiment.html',locals())
+
+def Ner(request):
+    review = pd.read_csv('temp.csv', dtype={'comm': str})
+    rs = sen.Sentiment(review['comm'])
+    df = sen.to_csv(rs,review)
+
+    good_ner.data = pd.read_csv('advantage.csv')
+    bad_ner.data = pd.read_csv('disadvantage.csv')
+    pred = good_ner.prediction()
+    good_ner.to_CoNLL(pred)
+    pred = bad_ner.prediction()
+    bad_ner.to_CoNLL(pred)
+
+    
+    context = {
+        'good_keyword_top5': good_ner.keyword_top5,
+        'bad_keyword_top5': bad_ner.keyword_top5,
+        # 'adj_top5':ner.adj_top5,
+        'data':sen.dict,
+        'good_data': good_ner.data['comm'].tolist(),
+        'bad_data' : bad_ner.data['comm'].tolist(),
+    }
+    return render(request,'NER.html',context)
 
 def keyword_list(request):
     extractor = pke.unsupervised.YAKE()
