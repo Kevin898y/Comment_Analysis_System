@@ -17,11 +17,12 @@ from nltk.corpus import wordnet
 from nltk import word_tokenize, pos_tag
 from nltk.stem import WordNetLemmatizer
 from .Keyword_Merge import Keyword_Merge
-merge = Keyword_Merge('booking_word2vec.model')
+
+keyword_merge = Keyword_Merge('model/booking_word2vec.model')
 
 
 # In[1]:
-class Bert_NER:
+class Bert_NER:  
     def __init__(self,model_path,data_path,MAX_LEN=100):
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         self.MAX_LEN = 100
@@ -132,9 +133,13 @@ class Bert_NER:
                 if label == 'B-KEY' or label=='I-KEY':
                     if token in keyword:
                         keyword[token] += 1
+                        token_label = token
+                        break #假設只有一個關鍵字
                     else:
                         keyword[token] = 0
-                    token_label = token
+                        token_label = token
+                        break #假設只有一個關鍵字
+                    
                 elif label == 'B-ADJ' or label == 'I-ADJ':
                     if token in adj:
                         adj[token] += 1
@@ -144,15 +149,17 @@ class Bert_NER:
             sentence_label.append(token_label)
             output.append(temp)
             
-
+        
         keyword_top5 = sorted(keyword.items(), key=lambda d: d[1],reverse=True)[0:5]
         keyword_top5 = [i[0] for i in keyword_top5]
-        adj_top5 = sorted(adj.items(), key=lambda d: d[1], reverse=True)[0:5]
-        adj_top5 = [i[0] for i in adj_top5]
+        keyword_top5,sentence_label= keyword_merge.merge(keyword_top5,sentence_label)
+        keyword_top5 =[i for i in keyword_top5.keys()][0:5]
+        # adj_top5 = sorted(adj.items(), key=lambda d: d[1], reverse=True)[0:5]
+        # adj_top5 = [i[0] for i in adj_top5]
 
         self.output = output
         self.keyword_top5 = keyword_top5
-        self.adj_top5 = adj_top5
+        # self.adj_top5 = adj_top5
         self.label = sentence_label  
 
         test = {'label':[],'comm':[]}

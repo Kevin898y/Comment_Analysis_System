@@ -1,11 +1,13 @@
-class keyword_merge:
+import gensim
+import pandas as pd
+class Keyword_Merge:
     def __init__(self,model_path):
         self.model = gensim.models.KeyedVectors.load_word2vec_format(model_path)
         self.keyword = {}
     def merge(self,data,sentence_label):
         keyword = {}
         for i in range(len(data)):
-            s1 = data[i]
+            s1 = data[i] 
             if s1 == "":
                 continue
             if s1 not in keyword:
@@ -28,4 +30,4 @@ class keyword_merge:
                     if sentence_label[i]  in values:
                         sentence_label[i]  = key
                         break
-        return sentence_label, keyword     
+        return keyword,sentence_label     

@@ -29,6 +29,8 @@ class Review_Sentiment:
         self.MAX_SEQUENCE_LENGTH = 1000
         self.model = load_model(model_path)
         self.dict = {}
+        self.gooddict= {}
+        self.baddict= {}
         print(self.Sentiment('Apple'))
 
     def Sentiment(self,texts):
@@ -44,17 +46,20 @@ class Review_Sentiment:
         df = pd.DataFrame(raw_data, columns = ['label','comm'])
         Filter_advantage = df['label']==1
         Filter_disadvantage = df['label']==0
+
         disadvantage = df[Filter_disadvantage]
         advantage = df[Filter_advantage]
+
         df.to_csv('review_label.csv',index = False)
         disadvantage.to_csv('disadvantage.csv',index = False)
         advantage.to_csv('advantage.csv',index = False)
         self.data = df
 
-        label = df['label']
-        comm = df['comm']
-        
-        for i,j in zip(label,comm):
+        for i,j in zip(df['label'],df['comm']):
+            if i ==0:
+                self.baddict[j]=i
+            elif i ==1:
+                self.gooddict[j]=i
             self.dict[j]=i
         
         return raw_data

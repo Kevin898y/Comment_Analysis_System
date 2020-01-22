@@ -4,10 +4,10 @@
     <li><a href="{% url 'index' %}">Home</a></li>
     <li  class="current_page_item"><a href="{% url 'crawl' %}">Crawl</a></li>
     <li ><a href="{% url 'ner' %}">Ner</a></li>
-    <li><a href="{% url 'upload' %}">Split_annotation</a></li>
+    <!-- <li><a href="{% url 'upload' %}">Split_annotation</a></li>
     <li><a href="{% url 'keyword_list' %}">Keyword_list</a></li>
     <li><a href="{% url 'sentiment' %}">Sentiment</a></li>
-    <li><a href="{% url 'keyword' %}">Keyword</a></li>
+    <li><a href="{% url 'keyword' %}">Keyword</a></li> -->
 {% endblock %}
 
 
@@ -22,7 +22,9 @@
 {% endblock %}
 
 
-{% block content %}
+{% block content %} {% endblock %}
+
+{% block content2 %}
 <head>
   <meta charset="utf-8" />
   <title>Client Side jQuery DataTables</title>
@@ -33,7 +35,6 @@
 <body>
   <table id="myDataTalbe"  class="display"  >
       <thead>
-
           <tr>
               <th>Comment</th>
           </tr>
@@ -64,5 +65,5 @@
       });
   </script>
 </body>
-
 {% endblock %}
+

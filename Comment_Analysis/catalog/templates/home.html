@@ -30,7 +30,10 @@
 	<!-- end #menu -->
 </div>
 
+
+
 {% block title %}
+
 <div id="header-wrapper">
 	<div id="header">
 		<div id="logo">
@@ -41,26 +44,58 @@
 </div>
 {% endblock %}
 
-<!-- {% load static %}
-<div id="banner"><img src="{% static 'images/img04.jpg' %}" width="1000" height="350" alt="" /></div> -->
+<div id="wrapper">
+	<!-- end #header -->
+	<div id="page">
+			{% block content %}
+				<div id="content">
+					
+					
+					<h2>Searh Here:</h2>
+					<div id="search" >
+						<form method="post" id="search-text">
+							<table >
+								{% csrf_token %}
+								{{ form.as_table }}
+							</table>
+							<center>
+								<input type="submit" value="Submit">
+							</center>	
+						</form>
+					</div>
+					<div style="clear: both;">&nbsp;</div>
+				</div>
+			{% endblock %}  <!-- end #content -->
+			
+			<div id="sidebar">
+				{% block sidebar %}
 
-{% block content %}
+				<!-- <ul>
+					<li>
+						<h2>Categories</h2>
+						<ul>
+							<li><a href="#">Aliquam libero</a></li>
+							<li><a href="#">Consectetuer adipiscing elit</a></li>
+							<li><a href="#">Metus aliquam pellentesque</a></li>
+							<li><a href="#">Suspendisse iaculis mauris</a></li>
+							<li><a href="#">Urnanet non molestie semper</a></li>
+							<li><a href="#">Proin gravida orci porttitor</a></li>
+						</ul>
+					</li>
 
-<center>
-<h2>Searh Here:</h2>
-<div id="search" >
-	<form method="post" id="search-text">
-		<table >
-			{% csrf_token %}
-			{{ form.as_table }}
-		</table>
-		<input type="submit" value="Submit">
-		
-	</form>
+				</ul> -->
+				
+				{% endblock %}
+			</div>
+			<!-- end #sidebar -->
+			<div style="clear: both;">&nbsp;</div>
+	</div>
+	<!-- end #page -->
 </div>
-</center>
 
-{% endblock %}
+
+{% block content2 %} {% endblock %}
+
 
 
 <pre>

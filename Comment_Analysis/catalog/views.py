@@ -2,7 +2,6 @@ from .Booking_crawler import Booking_crawler
 from .Review_Sentiment import Review_Sentiment
 from .Keyword_Extraction import Keyword_Extraction
 from .BERT_NER import Bert_NER
-from .Keyword_Merge import Keyword_Merge
 from django.shortcuts import render
 import pandas as pd
 from django.shortcuts import render, get_object_or_404
@@ -20,7 +19,7 @@ from pip._vendor.html5lib.filters.sanitizer import Filter
 good_ner = Bert_NER('model/NER3.pkl','test_data.csv')
 bad_ner = Bert_NER('model/NER3.pkl','test_data.csv') 
 sen = Review_Sentiment('model/tokenizer.p','model/sentimental.h5')
-merge = Keyword_Merge('booking_word2vec.model')
+
 
 filename= '' 
 def Search(request):
@@ -39,7 +38,7 @@ def Search(request):
     context = {
         'form': form,
     }
-    return render(request, 'home.html', context)
+    return render(request,'home.html', context)
     
 def top1(request, id): #to do
     temp = id
@@ -49,17 +48,39 @@ def top1(request, id): #to do
             keycomm = sen.dict
         else:
             Filter = bad_ner.sentence_label ['label']==bad_ner.keyword_top5[id]
-            keycomm = bad_ner.sentence_label[Filter]['comm'].tolist()
+            data = bad_ner.sentence_label[Filter]
+            keycomm = dict(zip(data['comm'], [0]*len(data['label']) ))
     else :
         if id == 5:
             keycomm = sen.dict
         else:
             Filter = good_ner.sentence_label ['label']==good_ner.keyword_top5[id]
-            keycomm = good_ner.sentence_label[Filter]['comm'].tolist()
+            data = good_ner.sentence_label[Filter]
+            keycomm = dict(zip(data['comm'], [1]*len(data['label']) ))
     context = {
         'good_keyword_top5': good_ner.keyword_top5,
         'bad_keyword_top5': bad_ner.keyword_top5,
         'data':keycomm,
+        'id':temp,
+    }
+
+    return render(request,'NER.html',context)
+
+def sidebar(request, id): #to do
+    temp = id
+    data = sen.dict
+    if id == 0: #disadvantage
+        temp = 11
+        data = sen.baddict
+    elif id == 1: #advantage
+        temp = 5
+        data = sen.gooddict
+    elif id == 2:
+        temp = 12
+    context = {
+        'good_keyword_top5': good_ner.keyword_top5,
+        'bad_keyword_top5': bad_ner.keyword_top5,
+        'data':data,
         'id':temp,
     }
 
