@@ -1,72 +1,79 @@
-
+import torch
+from transformers import *
+torch.cuda.set_device(0)
+import torch.nn.functional as F
 import pandas as pd
 import numpy as np
-from keras.models import  load_model
-# from keras.layers import  CuDNNLSTM,Bidirectional, GlobalMaxPool1D,Input,Embedding,Dense, Activation, LSTM, Dropout
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
-import pickle
+from torch.utils.data import TensorDataset, DataLoader, SequentialSampler
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
-
-# In[8]:
-
-
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
-import keras.backend.tensorflow_backend as KTF
-import tensorflow as tf
-config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.333
-session = tf.Session(config=config)
-KTF.set_session(session)
-# In[9]:
-
-
+#不應該有ground_truth
 class Review_Sentiment:
-    def __init__(self,tokenizer_path,model_path):
-        self.tokenizer = pickle.load(open(tokenizer_path,'rb'))
-        self.MAX_SEQUENCE_LENGTH = 1000
-        self.model = load_model(model_path)
-        self.dict = {}
-        self.gooddict= {}
-        self.baddict= {}
-        print(self.Sentiment('Apple'))
+    def __init__(self,model_path,MAX_LEN=100):
+        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        self.MAX_LEN = 100
+        self.model = BertForSequenceClassification.from_pretrained(model_path)
+        self.data = []
+        self.ground_truth = {'label':[],'comm':[]}
+    def to_ids(self):
+        inputs = [] 
+        masks = []
+        self.ground_truth['label'].clear()
+        self.ground_truth['comm'].clear()
+        for sentence,label in zip(self.data['comm'],self.data['label']):
+            if (sentence == sentence):
+                data = self.tokenizer.encode(sentence, add_special_tokens=True)
+                if len(data) <= self.MAX_LEN:
+                    self.ground_truth['label'].append(label)
+                    self.ground_truth['comm'].append(sentence)
 
-    def Sentiment(self,texts):
-        seq = self.tokenizer.texts_to_sequences(texts)
-        seq = pad_sequences(seq, maxlen=self.MAX_SEQUENCE_LENGTH)
-        return self.model.predict(seq)
-    def to_csv(self,rs,review):
+                    data = pad_sequences([data], maxlen=self.MAX_LEN, dtype="long", truncating="post", padding="post")
+                    attention_masks = [[float(i>0) for i in ii] for ii in data]
+                    inputs.append(data)
+                    masks.append(attention_masks)
+        self.inputs= np.array(inputs).reshape(len(inputs),self.MAX_LEN)
+        self.masks = np.array(masks).reshape(len(inputs),self.MAX_LEN)
+    def prediction(self,data,batch_size=300):
+        self.data = data
+        self.to_ids()
+        self.model.cuda()
+        self.model.eval()
+        inputs = torch.tensor(self.inputs)
+        masks = torch.tensor(self.masks)
+        inputs = inputs.cuda()
+        masks = masks.cuda()
+        valid_data = TensorDataset(inputs, masks)
+        valid_sampler = SequentialSampler(valid_data)
+        valid_dataloader = DataLoader(valid_data, sampler=valid_sampler, batch_size=batch_size)
+        
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        pred = []
+        for batch in valid_dataloader:
+            batch = tuple(t.to(device) for t in batch)
+            b_input_ids, b_input_mask = batch
+            with torch.no_grad():
+                outputs = self.model(b_input_ids, token_type_ids=None,attention_mask=b_input_mask)
+                prediction = torch.max(F.softmax(outputs[0]),  dim=1)[1]
+                prediction = prediction.cpu()
+                pred.extend(prediction.numpy().tolist())
+        return pred
+    def to_csv(self,pred):
         raw_data= {'label':[],'comm':[]}
-        for label,comm in zip(rs,review['comm']):
+        for label,comm in zip(pred,self.ground_truth['comm']):
             raw_data['label'].append( int(label>0.5) )
             raw_data['comm'].append(comm)
 
         df = pd.DataFrame(raw_data, columns = ['label','comm'])
-        Filter_advantage = df['label']==1
-        Filter_disadvantage = df['label']==0
-
-        disadvantage = df[Filter_disadvantage]
-        advantage = df[Filter_advantage]
-
         df.to_csv('review_label.csv',index = False)
-        disadvantage.to_csv('disadvantage.csv',index = False)
-        advantage.to_csv('advantage.csv',index = False)
-        self.data = df
 
-        for i,j in zip(df['label'],df['comm']):
-            if i ==0:
-                self.baddict[j]=i
-            elif i ==1:
-                self.gooddict[j]=i
-            self.dict[j]=i
-        
+        #### for test
+        df = pd.DataFrame(self.ground_truth, columns = ['label','comm'])
+        df.to_csv('ground_truth.csv',index = False)
+
         return raw_data
 
 
-# In[ ]:
 
 
-# rs = Review_Sentiment('model/tokenizer.p','model/tokenizer.p')
 

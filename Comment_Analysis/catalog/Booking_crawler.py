@@ -81,12 +81,13 @@ class Booking_crawler:
                     raw_data['label'].append(label)
                     raw_data['comm'].append(str(j))
         df = pd.DataFrame(raw_data, columns = ['label','comm'])
-        df.to_csv('review.csv',index = False)
+        # df.to_csv('review.csv',index = False)
+        df.to_csv('scrapy.csv',index = False)
         # 分割句子
-        split = Bert_Split('split2.pkl','review.csv')
-        p = split.prediction()
-        df = split.split(p)
-        df.to_csv('temp.csv',index = False)
+        # split = Bert_Split('split2.pkl','review.csv')
+        # p = split.prediction()
+        # df = split.split(p)
+        # df.to_csv('ground_truth.csv',index = False)
         return df
 
     def Scrapy_Review(self):

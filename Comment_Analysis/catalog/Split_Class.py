@@ -1,6 +1,6 @@
 # In[1]:
 import torch
-from pytorch_transformers import *
+from transformers import *
 torch.cuda.set_device(0)
 import tensorflow as tf
 import torch.nn.functional as F 

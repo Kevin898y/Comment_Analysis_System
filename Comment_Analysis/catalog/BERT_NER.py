@@ -1,6 +1,6 @@
 # In[0]:
 import torch
-from pytorch_transformers import *
+from transformers import *
 import torch.nn.functional as F 
 import pandas as pd
 import numpy as np
@@ -26,16 +26,23 @@ class Bert_NER:
     def __init__(self,model_path,data_path,MAX_LEN=100):
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         self.MAX_LEN = 100
-        self.model = torch.load(model_path,map_location='cuda:0')
+        self.model = BertForTokenClassification.from_pretrained(model_path)
         self.data = pd.read_csv(data_path)
         self.size = []
+        self.training_data = {'label':[],'sentence':[]}
     def to_ids(self,):
         inputs = []
         masks = []
-        for sentence in self.data['comm']:
+        self.training_data['label'].clear()
+        self.training_data['sentence'].clear()
+        self.size.clear()
+        for label,sentence in zip(self.data['label'],self.data['comm']):
             if (sentence == sentence):
                 data = self.tokenizer.encode(sentence, add_special_tokens=True)
-                if len(data) < self.MAX_LEN:
+                if len(data) <= self.MAX_LEN:
+                    self.training_data['label'].append(label)
+                    self.training_data['sentence'].append(sentence)
+                
                     self.size.append(len(data))
                     data = pad_sequences([data], maxlen=self.MAX_LEN, dtype="long", truncating="post", padding="post")
                     attention_masks = [[float(i>0) for i in ii] for ii in data]
@@ -45,6 +52,7 @@ class Bert_NER:
         self.masks = np.array(masks).reshape(len(inputs),self.MAX_LEN)
     def prediction(self,batch_size=300):
         self.to_ids()
+        self.model.cuda()
         self.model.eval()
         inputs = torch.tensor(self.inputs)
         masks = torch.tensor(self.masks)
@@ -52,7 +60,7 @@ class Bert_NER:
         masks = masks.cuda()
         valid_data = TensorDataset(inputs, masks)
         valid_sampler = SequentialSampler(valid_data)
-        valid_dataloader = DataLoader(valid_data, sampler=valid_sampler, batch_size=batch_size)
+        valid_dataloader = DataLoader(valid_data,  shuffle=False, sampler=valid_sampler, batch_size=batch_size)
         
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         pred = []
@@ -114,68 +122,95 @@ class Bert_NER:
         return res
     def to_CoNLL(self,pred):
         output = []
-        id2tags = {0:'B-KEY', 1:'B-ADJ', 2:'O'}
-        keyword= {}
+        id2tags = {0:'B-KEY', 1:'O'}
+        good_keyword= {}
+        bad_keyword ={}
         adj = {}
         sentence_label = []
-        for sentence_pred,size,raw_data in zip(pred,self.size, self.inputs):
-            temp = {}
-            token_label = ''#sentence_label
-            sentence = raw_data[0:size]
+        #輸出文字是處理過的，可用self.training_data['sentence']取代
+        for sentence_pred,size,raw_data,sentiment_label in zip(pred, self.size, self.inputs, self.training_data['label']):
+            token_dict = {}
+            keywordlist = ''#sentence_label
+            #delete [ClS],[SEP]
+            sentence = raw_data[1:size-1] 
+            sentence_pred = sentence_pred[1:size-1]
             sentence,tags = self.convert_to_original(sentence,sentence_pred)
             sentence = self.lemmatize_sentence(sentence)
-            
-            for index in range(len(sentence)-2):
-                label = id2tags.get(int(tags[index+1]))
-                token = sentence[index+1]
-                temp[token] = label
+            index2 =0 
+            for index in range(len(sentence)):
+                label = id2tags.get(int(tags[index]))
+                token = sentence[index]
+                token_dict[token] = label
                 
-                if label == 'B-KEY' or label=='I-KEY':
-                    if token in keyword:
-                        keyword[token] += 1
-                        token_label = token
-                        break #假設只有一個關鍵字
-                    else:
-                        keyword[token] = 0
-                        token_label = token
-                        break #假設只有一個關鍵字
+                if label == 'B-KEY':
+                    keywordlist = token
+                    if sentiment_label == 0:
+                        if token in bad_keyword:
+                            bad_keyword[token] += 1
+                        else:
+                            bad_keyword[token] = 0
+                    elif sentiment_label == 1:
+                        if token in good_keyword:
+                            good_keyword[token] += 1
+                        else:
+                            good_keyword[token] = 0
+                    break #假設只有一個關鍵字
+                index2 = index
+            for index in range(index2+1,len(sentence)):
+                label = id2tags.get(int(tags[index]))
+                token = sentence[index]
+                token_dict[token] = label
+
+            sentence_label.append(keywordlist)
+            output.append(token_dict)
                     
-                elif label == 'B-ADJ' or label == 'I-ADJ':
-                    if token in adj:
-                        adj[token] += 1
-                    else:
-                        adj[token] = 1
+#                 elif label == 'B-ADJ' or label == 'I-ADJ': #沒再用
+#                     if token in adj:
+#                         adj[token] += 1
+#                     else:
+#                         adj[token] = 1
                         
-            sentence_label.append(token_label)
-            output.append(temp)
-            
-        
-        keyword_top5 = sorted(keyword.items(), key=lambda d: d[1],reverse=True)[0:5]
-        keyword_top5 = [i[0] for i in keyword_top5]
-        keyword_top5,sentence_label= keyword_merge.merge(keyword_top5,sentence_label)
-        keyword_top5 =[i for i in keyword_top5.keys()][0:5]
+           
+        self.output = output
+
+        good_keyword_top5 = sorted(good_keyword.items(), key=lambda d: d[1],reverse=True)
+        good_keyword_top5 = [i[0] for i in good_keyword_top5]
+        good_keyword_top5,sentence_label= keyword_merge.merge(good_keyword_top5,sentence_label,self.training_data['label'],1)
+        self.good_keyword_top5 =[i for i in good_keyword_top5.keys()][0:10]
+    
+        bad_keyword_top5 = sorted(bad_keyword.items(), key=lambda d: d[1],reverse=True)
+        bad_keyword_top5 = [i[0] for i in bad_keyword_top5]
+        bad_keyword_top5,sentence_label= keyword_merge.merge(bad_keyword_top5,sentence_label,self.training_data['label'],0)
+        self.bad_keyword_top5 =[i for i in bad_keyword_top5.keys()][0:10]
+    
+    
         # adj_top5 = sorted(adj.items(), key=lambda d: d[1], reverse=True)[0:5]
         # adj_top5 = [i[0] for i in adj_top5]
 
-        self.output = output
-        self.keyword_top5 = keyword_top5
+        
         # self.adj_top5 = adj_top5
-        self.label = sentence_label  
 
-        test = {'label':[],'comm':[]}
-        for label,comm in zip(self.label,self.data['comm']):
-            test['label'].append(label)
-            test['comm'].append(comm)
-        self.sentence_label = pd.DataFrame(test, columns = ['label','comm'])  
+        good = {'label':[],'comm':[]}
+        bad = {'label':[],'comm':[]} 
+        All = {'label':[],'comm':[],'sen_label':[]} #for test
+        for label, comm, sentiment_label in zip(sentence_label, output, self.training_data['label']):
+            All['label'].append(label)
+            All['comm'].append(comm)
+            All['sen_label'].append(sentiment_label)
+            if sentiment_label == 0:
+                bad['label'].append(label)
+                bad['comm'].append(comm)
+            else:
+                good['label'].append(label)
+                good['comm'].append(comm)
+        
+        self.good_sentence = pd.DataFrame(good, columns = ['label','comm'])
+        self.bad_sentence = pd.DataFrame(bad, columns = ['label','comm'])   
+        self.bad_sentence.to_csv('bad_sentence.csv',index = False)
+        self.all_sentence = pd.DataFrame(All, columns = ['label','comm','sen_label']) 
+        self.good = list(zip( [1]*len(self.good_sentence),self.good_sentence['comm'].tolist()))
+        self.bad = list(zip( [0]*len(self.bad_sentence),self.bad_sentence['comm'].tolist()))
 
+        self.all = list(zip(self.training_data['label'],output))
 
-        return output,keyword,adj,label
-#%%
-
-# ner = Bert_NER('model/NER3.pkl','data/test_data.csv')
-# pred = ner.prediction()
-# data = ner.to_csv(pred)
-
-
-
-
+        return self.all_sentence 

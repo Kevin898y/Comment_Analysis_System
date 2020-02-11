@@ -7,7 +7,7 @@ import pandas as pd
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-import pke
+# import pke
 from nltk.corpus import stopwords
 import numpy as np
 from catalog.forms import SearchForm
@@ -16,10 +16,9 @@ from catalog.forms import UploadFileForm
 from pip._vendor.html5lib.filters.sanitizer import Filter
 
 # ke = Keyword_Extraction('wordtovector/GoogleNews-vectors-negative300.bin','data/keyword.csv','1')
-good_ner = Bert_NER('model/NER3.pkl','test_data.csv')
-bad_ner = Bert_NER('model/NER3.pkl','test_data.csv') 
-sen = Review_Sentiment('model/tokenizer.p','model/sentimental.h5')
-
+ner = Bert_NER('model/NER/','test_data.csv')
+sen = Review_Sentiment('model/sentiment/')
+labels = []
 
 filename= '' 
 def Search(request):
@@ -42,25 +41,35 @@ def Search(request):
     
 def top1(request, id): #to do
     temp = id
-    if id >5:
-        id -= 6
-        if id == 5:
-            keycomm = sen.dict
-        else:
-            Filter = bad_ner.sentence_label ['label']==bad_ner.keyword_top5[id]
-            data = bad_ner.sentence_label[Filter]
-            keycomm = dict(zip(data['comm'], [0]*len(data['label']) ))
+    if id >10:
+        id = id-len(ner.good_keyword_top5)-1
+
+        Filter = ner.bad_sentence ['label']==ner.bad_keyword_top5[id]
+        clean_data = ner.bad_sentence[Filter]
+        data = list(zip( [0]*len(clean_data['label']),clean_data['comm'] ))
+        #for test 可能有多個room
+        Filter = ner.all_sentence ['label']==ner.bad_keyword_top5[id]
+        Filter2 = ner.all_sentence ['sen_label']==0
+        ground_truth = list(np.array(labels)[Filter & Filter2])
+        data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))  
+
     else :
-        if id == 5:
-            keycomm = sen.dict
-        else:
-            Filter = good_ner.sentence_label ['label']==good_ner.keyword_top5[id]
-            data = good_ner.sentence_label[Filter]
-            keycomm = dict(zip(data['comm'], [1]*len(data['label']) ))
+        Filter = ner.good_sentence ['label']==ner.good_keyword_top5[id]
+        clean_data = ner.good_sentence[Filter]
+        data = list(zip( [1]*len(clean_data['label']),clean_data['comm'] ))
+
+        #for test
+        Filter = ner.all_sentence ['label']==ner.good_keyword_top5[id]
+        Filter2 = ner.all_sentence ['sen_label']==1
+        ground_truth = list(np.array(labels)[Filter & Filter2])
+        data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))  
+
     context = {
-        'good_keyword_top5': good_ner.keyword_top5,
-        'bad_keyword_top5': bad_ner.keyword_top5,
-        'data':keycomm,
+        'good_keyword_top5': ner.good_keyword_top5,
+        'bad_keyword_top5': ner.bad_keyword_top5,
+        'good_keyword_size':len(ner.good_keyword_top5),
+        'bad_keyword_size': len(ner.bad_keyword_top5),
+        'data':data,
         'id':temp,
     }
 
@@ -68,18 +77,37 @@ def top1(request, id): #to do
 
 def sidebar(request, id): #to do
     temp = id
-    data = sen.dict
+    data = ner.all
+    # for test
+    data = list(zip(labels,[i[0]for i in data],[i[1] for i in data] ))
+    df = pd.DataFrame( ner.training_data, columns = ['label','sentence'])
+
     if id == 0: #disadvantage
-        temp = 11
-        data = sen.baddict
+        temp = len(ner.good_keyword_top5)+len(ner.bad_keyword_top5)+1
+        data = ner.bad
+
+        # for test
+        Filter = df['label']== 0
+        ground_truth = list(np.array(labels)[Filter])
+        data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))  
+
     elif id == 1: #advantage
-        temp = 5
-        data = sen.gooddict
-    elif id == 2:
-        temp = 12
+        temp =  len(ner.good_keyword_top5)
+        print(len(ner.good_keyword_top5))
+        data = ner.good
+
+        # for test
+        Filter = df['label']== 1
+        ground_truth = list(np.array(labels)[Filter])
+        data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] )) 
+
+    elif id == 2: #all
+        temp = len(ner.good_keyword_top5)+len(ner.bad_keyword_top5)+2
     context = {
-        'good_keyword_top5': good_ner.keyword_top5,
-        'bad_keyword_top5': bad_ner.keyword_top5,
+        'good_keyword_top5': ner.good_keyword_top5,
+        'bad_keyword_top5': ner.bad_keyword_top5,
+        'good_keyword_size':len(ner.good_keyword_top5),
+        'bad_keyword_size': len(ner.bad_keyword_top5)+1,
         'data':data,
         'id':temp,
     }
@@ -148,62 +176,74 @@ def simple_crawl(request):  #not use
     return render(request,'simple_crawl.html',locals())
 
 def sentiment(request):
-    review = pd.read_csv('temp.csv')
-    rs = sen.Sentiment(review['comm'])
-    df = sen.to_csv(rs,review)
+    # review = pd.read_csv('ground_truth.csv')
+    # rs = sen.Sentiment(review['comm'])
+    # df = sen.to_csv(rs,review)
     
-    label = df['label']
-    comm = df['comm']
-    Dict = {}
+    # label = df['label']
+    # comm = df['comm']
+    # Dict = {}
     
-    for i,j in zip(label,comm):
-        Dict[j]=i
+    # for i,j in zip(label,comm):
+    #     Dict[j]=i
  
     return render(request,'sentiment.html',locals())
 
 def Ner(request):
-    review = pd.read_csv('temp.csv', dtype={'comm': str})
-    rs = sen.Sentiment(review['comm'])
-    df = sen.to_csv(rs,review)
+    review = pd.read_csv('scrapy.csv', dtype={'comm': str})
+    pred = sen.prediction(review)
+    df = sen.to_csv(pred)
 
-    good_ner.data = pd.read_csv('advantage.csv')
-    bad_ner.data = pd.read_csv('disadvantage.csv')
-    pred = good_ner.prediction()
-    good_ner.to_CoNLL(pred)
-    pred = bad_ner.prediction()
-    bad_ner.to_CoNLL(pred)
+    ner.data = pd.read_csv('review_label.csv')
+    pred = ner.prediction()
+    data = ner.to_CoNLL(pred)
+    data = ner.all
 
-    
+    #for test
+    global labels
+    labels.clear() 
+    review = pd.read_csv('ground_truth.csv', dtype={'comm': str})
+    for label in review['label']:
+        labels.append(label)
+    data = list(zip(labels,[i[0]for i in data],[i[1] for i in data] ))        
+
+    # good_ner.data = pd.read_csv('advantage.csv')
+    # bad_ner.data = pd.read_csv('disadvantage.csv')
+    # pred = good_ner.prediction()
+    # good_ner.to_CoNLL(pred)
+    # pred = bad_ner.prediction()
+    # bad_ner.to_CoNLL(pred)
+
+    # list(sen.dict.values())#label
+    # list()
     context = {
-        'good_keyword_top5': good_ner.keyword_top5,
-        'bad_keyword_top5': bad_ner.keyword_top5,
+        'good_keyword_top5': ner.good_keyword_top5,
+        'bad_keyword_top5': ner.bad_keyword_top5,
         # 'adj_top5':ner.adj_top5,
-        'data':sen.dict,
-        'good_data': good_ner.data['comm'].tolist(),
-        'bad_data' : bad_ner.data['comm'].tolist(),
+        'data':data,
     }
     return render(request,'NER.html',context)
 
-def keyword_list(request):
-    extractor = pke.unsupervised.YAKE()
-    extractor.load_document(input='review.csv', language='en',normalization=None)
-    stoplist = stopwords.words('english')
-    extractor.candidate_selection(n=3, stoplist=stoplist)
-    window = 2
-    use_stems = False # use stems instead of words for weighting
-    extractor.candidate_weighting(window=window,
-                              stoplist=stoplist,
-                              use_stems=use_stems)
-    threshold = 0.8
-    keyphrases = extractor.get_n_best(n=10, threshold=threshold)
-    # raw_data= {'key':[]}
-    # for i in keyphrases:
-    #     raw_data['key'].append(i[0])
+#def keyword_list(request):
+    # extractor = pke.unsupervised.YAKE()
+    # extractor.load_document(input='review.csv', language='en',normalization=None)
+    # stoplist = stopwords.words('english')
+    # extractor.candidate_selection(n=3, stoplist=stoplist)
+    # window = 2
+    # use_stems = False # use stems instead of words for weighting
+    # extractor.candidate_weighting(window=window,
+    #                           stoplist=stoplist,
+    #                           use_stems=use_stems)
+    # threshold = 0.8
+    # keyphrases = extractor.get_n_best(n=10, threshold=threshold)
+    # # raw_data= {'key':[]}
+    # # for i in keyphrases:
+    # #     raw_data['key'].append(i[0])
     
-    context = {
-        'keyphrases': keyphrases,
-    }
-    return render(request,'Keyword_List.html',context)
+    # context = {
+    #     'keyphrases': keyphrases,
+    # }
+    # return render(request,'Keyword_List.html',context)
     
 def keyword(request):
     
