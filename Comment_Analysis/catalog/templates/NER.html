@@ -101,7 +101,7 @@
                       truth: {{ground_truth}}&nbsp;&nbsp;pred: {{sen_label}}&nbsp;&nbsp;
                     </span>
                 {% endif %}
-                  {% for token,label in comm.items %}
+                  {% for token,label in comm %}
                     {% if label == "B-KEY" %}
                       <font color="red">{{token}}</font>
                     {% else %}
@@ -109,7 +109,7 @@
                     {% endif %}
                   {% endfor %}
                   
-                </td>
+                  </td>
               {% elif sen_label == 1 %}
                 {% if sen_label == ground_truth %}
                   <td style="background-color:rgb(158, 228, 255);" align="center">
@@ -121,7 +121,7 @@
                 {% endif %}
                 
 
-                {% for token,label in comm.items %}
+                {% for token,label in comm %}
                     {% if label == "B-KEY"%}
                       <font color="red">{{token}}</font>
                     {% else %}
@@ -129,7 +129,7 @@
                     {% endif %}
                 {% endfor %}
               
-                </td>
+                  </td>
               {% endif %}
           </tr>
           {% endfor %}

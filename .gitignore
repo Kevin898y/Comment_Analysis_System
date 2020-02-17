@@ -1,0 +1,8 @@
+Comment_Analysis/review.csv
+Comment_Analysis/model/weights-05-0.92.hdf5
+Comment_Analysis/review_label.csv
+Comment_Analysis/model/sentimental.h5
+Comment_Analysis/model/weights-05-0.92_mult.hdf5
+Comment_Analysis/model/weights-10-0.92.hdf5
+Comment_Analysis/wordtovector/GoogleNews-vectors-negative300.bin
+Comment_Analysis/wordtovector/glove.6B.200d.txt

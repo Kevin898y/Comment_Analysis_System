@@ -41,7 +41,7 @@ def Search(request):
     
 def top1(request, id): #to do
     temp = id
-    if id >10:
+    if id >len(ner.good_keyword_top5):
         id = id-len(ner.good_keyword_top5)-1
 
         Filter = ner.bad_sentence ['label']==ner.bad_keyword_top5[id]
@@ -50,7 +50,7 @@ def top1(request, id): #to do
         #for test 可能有多個room
         Filter = ner.all_sentence ['label']==ner.bad_keyword_top5[id]
         Filter2 = ner.all_sentence ['sen_label']==0
-        ground_truth = list(np.array(labels)[Filter & Filter2])
+        ground_truth = list(np.array(ner.ground_truth)[Filter & Filter2])
         data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))  
 
     else :
@@ -61,7 +61,7 @@ def top1(request, id): #to do
         #for test
         Filter = ner.all_sentence ['label']==ner.good_keyword_top5[id]
         Filter2 = ner.all_sentence ['sen_label']==1
-        ground_truth = list(np.array(labels)[Filter & Filter2])
+        ground_truth = list(np.array(ner.ground_truth)[Filter & Filter2])
         data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))  
 
     context = {
@@ -77,32 +77,37 @@ def top1(request, id): #to do
 
 def sidebar(request, id): #to do
     temp = id
-    data = ner.all
+  
     # for test
-    data = list(zip(labels,[i[0]for i in data],[i[1] for i in data] ))
-    df = pd.DataFrame( ner.training_data, columns = ['label','sentence'])
+    Filter_duplicated = ~ner.all_sentence['comm'].duplicated() 
 
     if id == 0: #disadvantage
         temp = len(ner.good_keyword_top5)+len(ner.bad_keyword_top5)+1
         data = ner.bad
 
         # for test
-        Filter = df['label']== 0
-        ground_truth = list(np.array(labels)[Filter])
+        Filter = ner.all_sentence['sen_label']== 0
+        ground_truth = list(np.array(ner.ground_truth)[Filter_duplicated & Filter])
         data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))  
 
     elif id == 1: #advantage
         temp =  len(ner.good_keyword_top5)
-        print(len(ner.good_keyword_top5))
         data = ner.good
 
         # for test
-        Filter = df['label']== 1
-        ground_truth = list(np.array(labels)[Filter])
+        Filter = ner.all_sentence['sen_label']== 1
+        ground_truth = list(np.array(ner.ground_truth)[Filter_duplicated & Filter])
         data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] )) 
 
-    elif id == 2: #all
+    else: #all
         temp = len(ner.good_keyword_top5)+len(ner.bad_keyword_top5)+2
+        data = ner.all
+        
+        # for test
+        ground_truth = list(np.array(ner.ground_truth)[Filter_duplicated])
+        data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))
+        
+        
     context = {
         'good_keyword_top5': ner.good_keyword_top5,
         'bad_keyword_top5': ner.bad_keyword_top5,
@@ -197,22 +202,13 @@ def Ner(request):
     ner.data = pd.read_csv('review_label.csv')
     pred = ner.prediction()
     data = ner.to_CoNLL(pred)
-    data = ner.all
 
-    #for test
-    global labels
-    labels.clear() 
-    review = pd.read_csv('ground_truth.csv', dtype={'comm': str})
-    for label in review['label']:
-        labels.append(label)
-    data = list(zip(labels,[i[0]for i in data],[i[1] for i in data] ))        
+    Filter = ~ner.all_sentence['comm'].duplicated() 
+    ground_truth = list(np.array(ner.ground_truth)[Filter])
+    data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))
+    
+    # data = list(zip(ner.ground_truth,[i[0]for i in data],[i[1] for i in data] ))        
 
-    # good_ner.data = pd.read_csv('advantage.csv')
-    # bad_ner.data = pd.read_csv('disadvantage.csv')
-    # pred = good_ner.prediction()
-    # good_ner.to_CoNLL(pred)
-    # pred = bad_ner.prediction()
-    # bad_ner.to_CoNLL(pred)
 
     # list(sen.dict.values())#label
     # list()
