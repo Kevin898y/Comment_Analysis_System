@@ -16,7 +16,7 @@ from catalog.forms import UploadFileForm
 from pip._vendor.html5lib.filters.sanitizer import Filter
 
 # ke = Keyword_Extraction('wordtovector/GoogleNews-vectors-negative300.bin','data/keyword.csv','1')
-ner = Bert_NER('model/NER/','test_data.csv')
+ner = Bert_NER('model/NER/')
 sen = Review_Sentiment('model/sentiment/')
 labels = []
 
@@ -105,6 +105,7 @@ def sidebar(request, id): #to do
         
         # for test
         ground_truth = list(np.array(ner.ground_truth)[Filter_duplicated])
+        data = list(np.array(data)[Filter_duplicated])
         data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))
         
         
@@ -205,6 +206,7 @@ def Ner(request):
 
     Filter = ~ner.all_sentence['comm'].duplicated() 
     ground_truth = list(np.array(ner.ground_truth)[Filter])
+    data = list(np.array(data)[Filter])
     data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))
     
     # data = list(zip(ner.ground_truth,[i[0]for i in data],[i[1] for i in data] ))        

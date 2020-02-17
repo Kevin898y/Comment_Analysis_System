@@ -23,11 +23,11 @@ keyword_merge = Keyword_Merge('model/booking_word2vec.model')
 
 # In[1]:
 class Bert_NER:  
-    def __init__(self,model_path,data_path,MAX_LEN=100):
+    def __init__(self,model_path,MAX_LEN=100):
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         self.MAX_LEN = 100
         self.model = BertForTokenClassification.from_pretrained(model_path)
-        self.data = pd.read_csv(data_path)
+        self.data=''
         self.size = []
         self.training_data = {'label':[],'sentence':[]}
     def to_ids(self,):
@@ -166,7 +166,10 @@ class Bert_NER:
         self.output = tuple(output)
 
         keyword_sorted = sorted(keyword.items(), key=lambda d: d[1],reverse=True)
+        keyword_sorted = [i[0] for i in keyword_sorted]
         sentence_label = keyword_merge.merge(keyword_sorted, sentence_label)
+
+        print(keyword_merge.keyword)
 
         good_keyword= {}
         bad_keyword ={}
@@ -219,15 +222,12 @@ class Bert_NER:
         self.all_sentence = all_sentence.drop_duplicates()
         self.bad_sentence = bad_sentence.drop_duplicates()
         self.good_sentence = good_sentence.drop_duplicates()
-        Filter_duplicated = ~good_sentence.duplicated() 
-        self.ground_truth = list(np.array(ground_truth)[Filter_duplicated])
+        Filter_duplicated = ~all_sentence.duplicated() 
+        self.ground_truth = list(np.array(ground_truth)[Filter_duplicated]) #去除同句子同label
  
-        self.bad_sentence.to_csv('bad_sentence.csv',index = False)
-        self.all_sentence.to_csv('all_sentence.csv',index = False)
-        
-        self.good = list(zip( [1]*len(self.good_sentence),self.good_sentence['comm'].tolist()))
-        self.bad = list(zip( [0]*len(self.bad_sentence),self.bad_sentence['comm'].tolist()))
-
-        self.all = list(zip(sentiment_label,output))
+        #去除同句子不同label
+        self.good = list(zip( [1]*len(self.good_sentence['comm'].drop_duplicates()),self.good_sentence['comm'].drop_duplicates().tolist()))
+        self.bad = list(zip( [0]*len(self.bad_sentence['comm'].drop_duplicates()),self.bad_sentence['comm'].drop_duplicates().tolist()))
+        self.all = list(zip(self.all_sentence['sen_label'].tolist(),self.all_sentence['comm'].tolist()))
 
         return self.all 
