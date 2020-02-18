@@ -169,7 +169,6 @@ class Bert_NER:
         keyword_sorted = [i[0] for i in keyword_sorted]
         sentence_label = keyword_merge.merge(keyword_sorted, sentence_label)
 
-        print(keyword_merge.keyword)
 
         good_keyword= {}
         bad_keyword ={}
@@ -224,7 +223,9 @@ class Bert_NER:
         self.good_sentence = good_sentence.drop_duplicates()
         Filter_duplicated = ~all_sentence.duplicated() 
         self.ground_truth = list(np.array(ground_truth)[Filter_duplicated]) #去除同句子同label
- 
+
+
+        self.all_sentence.to_csv('all_sentence.csv',index = False)
         #去除同句子不同label
         self.good = list(zip( [1]*len(self.good_sentence['comm'].drop_duplicates()),self.good_sentence['comm'].drop_duplicates().tolist()))
         self.bad = list(zip( [0]*len(self.bad_sentence['comm'].drop_duplicates()),self.bad_sentence['comm'].drop_duplicates().tolist()))
