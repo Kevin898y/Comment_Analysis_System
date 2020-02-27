@@ -17,9 +17,10 @@ from nltk.corpus import wordnet
 from nltk import word_tokenize, pos_tag
 from nltk.stem import WordNetLemmatizer
 from .Keyword_Merge import Keyword_Merge
+from .Sentence_Similarity import Sentence_Simlarity
 
 keyword_merge = Keyword_Merge('model/booking_word2vec.model')
-
+sentence_sim = Sentence_Simlarity()
 
 # In[1]:
 class Bert_NER:  
@@ -223,6 +224,12 @@ class Bert_NER:
         self.good_sentence = good_sentence.drop_duplicates()
         Filter_duplicated = ~all_sentence.duplicated() 
         self.ground_truth = list(np.array(ground_truth)[Filter_duplicated]) #去除同句子同label
+
+        sentence_sim.data = self.all_sentence
+        out = sentence_sim.similarity()
+
+        for index,label in zip(out['index'],out['label']):###
+            self.all_sentence.at[index,'label']= label
 
 
         self.all_sentence.to_csv('all_sentence.csv',index = False)
