@@ -123,7 +123,7 @@ class Bert_NER:
         return res
     def to_CoNLL(self,pred):
         output = []
-        id2tags = {0:'B-KEY', 1:'O'}
+        id2tags = {0:'B-KEY', 1:'B-ADJ', 2:'O'}
         keyword= {}
         adj = {}
         sentence_label = []
@@ -151,6 +151,12 @@ class Bert_NER:
                         keyword[token] += 1
                     else:
                         keyword[token] = 0
+                
+#                 elif label == 'B-ADJ' or label == 'I-ADJ': #沒再用
+#                     if token in adj:
+#                         adj[token] += 1
+#                     else:
+#                         adj[token] = 1
                     
             #1NF(First normal form)
             for i in comm_label:
@@ -158,11 +164,7 @@ class Bert_NER:
                 sentence_label.append(i)
                 output.append(tuple(token_list))
                 sentiment_label.append(sentiment)
-#                 elif label == 'B-ADJ' or label == 'I-ADJ': #沒再用
-#                     if token in adj:
-#                         adj[token] += 1
-#                     else:
-#                         adj[token] = 1
+
 
         self.output = tuple(output)
 
@@ -194,12 +196,6 @@ class Bert_NER:
         bad_keyword_top5 = sorted(bad_keyword.items(), key=lambda d: d[1],reverse=True)
         self.bad_keyword_top5 = [i[0] for i in bad_keyword_top5]
 
-    
-        # adj_top5 = sorted(adj.items(), key=lambda d: d[1], reverse=True)[0:5]
-        # adj_top5 = [i[0] for i in adj_top5]
-
-        
-        # self.adj_top5 = adj_top5
 
         good = {'label':[],'comm':[]}
         bad = {'label':[],'comm':[]} 

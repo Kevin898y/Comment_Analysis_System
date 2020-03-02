@@ -16,7 +16,7 @@ from catalog.forms import UploadFileForm
 from pip._vendor.html5lib.filters.sanitizer import Filter
 
 # ke = Keyword_Extraction('wordtovector/GoogleNews-vectors-negative300.bin','data/keyword.csv','1')
-ner = Bert_NER('model/NER/')
+ner = Bert_NER('model/NER2/')
 sen = Review_Sentiment('model/sentiment/')
 labels = []
 

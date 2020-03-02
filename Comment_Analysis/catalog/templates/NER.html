@@ -124,6 +124,8 @@
                 {% for token,label in comm %}
                     {% if label == "B-KEY"%}
                       <font color="red">{{token}}</font>
+                    {% elif label == "B-ADJ" %}
+                      <font color="blue">{{token}}</font>
                     {% else %}
                       {{token}}
                     {% endif %}
