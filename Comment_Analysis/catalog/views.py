@@ -44,23 +44,23 @@ def top1(request, id): #to do
     if id >len(ner.good_keyword_top5):
         id = id-len(ner.good_keyword_top5)-1
 
-        Filter = ner.bad_sentence ['label']==ner.bad_keyword_top5[id]
+        Filter = ner.bad_sentence ['keyword']==ner.bad_keyword_top5[id]
         clean_data = ner.bad_sentence[Filter]
-        data = list(zip( [0]*len(clean_data['label']),clean_data['comm'] ))
+        data = list(zip( [0]*len(clean_data['keyword']),clean_data['sentence'] ))
         #for test 可能有多個room
-        Filter = ner.all_sentence ['label']==ner.bad_keyword_top5[id]
-        Filter2 = ner.all_sentence ['sen_label']==0
+        Filter = ner.all_sentence ['keyword']==ner.bad_keyword_top5[id]
+        Filter2 = ner.all_sentence ['sentiment']==0
         ground_truth = list(np.array(ner.ground_truth)[Filter & Filter2])
         data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))  
 
     else :
-        Filter = ner.good_sentence ['label']==ner.good_keyword_top5[id]
+        Filter = ner.good_sentence ['keyword']==ner.good_keyword_top5[id]
         clean_data = ner.good_sentence[Filter]
-        data = list(zip( [1]*len(clean_data['label']),clean_data['comm'] ))
+        data = list(zip( [1]*len(clean_data['keyword']),clean_data['sentence'] ))
 
         #for test
-        Filter = ner.all_sentence ['label']==ner.good_keyword_top5[id]
-        Filter2 = ner.all_sentence ['sen_label']==1
+        Filter = ner.all_sentence ['keyword']==ner.good_keyword_top5[id]
+        Filter2 = ner.all_sentence ['sentiment']==1
         ground_truth = list(np.array(ner.ground_truth)[Filter & Filter2])
         data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))  
 
@@ -79,14 +79,14 @@ def sidebar(request, id): #to do
     temp = id
   
     # for test
-    Filter_duplicated = ~ner.all_sentence['comm'].duplicated() 
+    Filter_duplicated = ~ner.all_sentence['sentence'].duplicated() 
 
     if id == 0: #disadvantage
         temp = len(ner.good_keyword_top5)+len(ner.bad_keyword_top5)+1
         data = ner.bad
 
         # for test
-        Filter = ner.all_sentence['sen_label']== 0
+        Filter = ner.all_sentence['sentiment']== 0
         ground_truth = list(np.array(ner.ground_truth)[Filter_duplicated & Filter])
         data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))  
 
@@ -95,7 +95,7 @@ def sidebar(request, id): #to do
         data = ner.good
 
         # for test
-        Filter = ner.all_sentence['sen_label']== 1
+        Filter = ner.all_sentence['sentiment']== 1
         ground_truth = list(np.array(ner.ground_truth)[Filter_duplicated & Filter])
         data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] )) 
 
@@ -116,7 +116,7 @@ def sidebar(request, id): #to do
         'bad_keyword_size': len(ner.bad_keyword_top5)+1,
         'data':data,
         'id':temp,
-    }
+    } 
 
     return render(request,'NER.html',context)
 
@@ -204,8 +204,9 @@ def Ner(request):
     pred = ner.prediction()
     data = ner.to_CoNLL(pred)
 
-    Filter = ~ner.all_sentence['comm'].duplicated() 
+    Filter = ~ner.all_sentence['sentence'].duplicated() 
     ground_truth = list(np.array(ner.ground_truth)[Filter])
+    ground_truth = ner.ground_truth
     data = list(np.array(data)[Filter])
     data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))
     

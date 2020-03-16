@@ -20,7 +20,7 @@ from .Keyword_Merge import Keyword_Merge
 from .Sentence_Similarity import Sentence_Simlarity
 
 keyword_merge = Keyword_Merge('model/booking_word2vec.model')
-sentence_sim = Sentence_Simlarity()
+# sentence_sim = Sentence_Simlarity()
 
 # In[1]:
 class Bert_NER:  
@@ -124,114 +124,67 @@ class Bert_NER:
     def to_CoNLL(self,pred):
         output = []
         id2tags = {0:'B-KEY', 1:'B-ADJ', 2:'O'}
-        keyword= {}
-        adj = {}
         sentence_label = []
-        sentiment_label = []
         review = pd.read_csv('ground_truth.csv', dtype={'comm': str})
-        ground_truth = []
+        data = {'keyword':[],'adj':[],'sentiment':[],'sentence':[],'ground_truth':[]}
+
         #輸出文字是處理過的，可用self.training_data['sentence']取代
         for sentence_pred,size,raw_data,sentiment,truth in zip(pred, self.size, self.inputs,self.training_data['label'],review['label']):
+            
             token_list = []
             comm_label = []#sentence_label
+            adj_label = []
             #delete [ClS],[SEP]
             sentence = raw_data[1:size-1] 
             sentence_pred = sentence_pred[1:size-1]
             sentence,tags = self.convert_to_original(sentence,sentence_pred)
-            sentence = self.lemmatize_sentence(sentence)
+            sentence = self.lemmatize_sentence(sentence) ###????
 
             for index in range(len(sentence)):
                 label = id2tags.get(int(tags[index]))
                 token = sentence[index]
                 token_list.append((token,label))
                 if label == 'B-KEY':
-      
                     comm_label.append(token)
-                    if token in keyword:
-                        keyword[token] += 1
-                    else:
-                        keyword[token] = 0
-                
-#                 elif label == 'B-ADJ' or label == 'I-ADJ': #沒再用
-#                     if token in adj:
-#                         adj[token] += 1
-#                     else:
-#                         adj[token] = 1
                     
+                elif label == 'B-ADJ' : 
+                    adj_label.append(token)
+
+           
             #1NF(First normal form)
             for i in comm_label:
-                ground_truth.append(truth)
-                sentence_label.append(i)
-                output.append(tuple(token_list))
-                sentiment_label.append(sentiment)
+                data['keyword'].append(i)
+                data['adj'].append(tuple(adj_label))
+                data['sentiment'].append(sentiment)
+                data['sentence'].append(tuple(token_list))
+                data['ground_truth'].append(truth)
 
+        data = pd.DataFrame(data, columns = ['keyword','adj','sentiment','sentence','ground_truth'])
+        self.temp = data
+        print(data.keyword.value_counts()[0:5])
 
         self.output = tuple(output)
 
-        keyword_sorted = sorted(keyword.items(), key=lambda d: d[1],reverse=True)
-        keyword_sorted = [i[0] for i in keyword_sorted]
-        sentence_label = keyword_merge.merge(keyword_sorted, sentence_label)
-
-
+        keyword_sorted = list(data.keyword.value_counts().index)
+        sentence_label = keyword_merge.merge(keyword_sorted, data['keyword'])
+        data['keyword'] = sentence_label
+        
+        Filter_Good = data['sentiment']==1
+        Filter_Bad = data['sentiment'] == 0
         good_keyword= {}
         bad_keyword ={}
+        self.good_keyword_top5 = list(data[Filter_Good].keyword.value_counts().index[0:5])
+        self.bad_keyword_top5 = list(data[Filter_Bad].keyword.value_counts().index[0:5])
 
-        for label,sentiment in zip(sentence_label,sentiment_label):
-            if sentiment == 0:
-                if label in bad_keyword:
-                    bad_keyword[label] += 1
-                else:
-                    bad_keyword[label] = 0
-            else:
-                if label in good_keyword:
-                    good_keyword[label] += 1
-                else:
-                    good_keyword[label] = 0
-
-
-        good_keyword_top5 = sorted(good_keyword.items(), key=lambda d: d[1],reverse=True)
-        self.good_keyword_top5 = [i[0] for i in good_keyword_top5]
-
-    
-        bad_keyword_top5 = sorted(bad_keyword.items(), key=lambda d: d[1],reverse=True)
-        self.bad_keyword_top5 = [i[0] for i in bad_keyword_top5]
-
-
-        good = {'label':[],'comm':[]}
-        bad = {'label':[],'comm':[]} 
-        All = {'label':[],'comm':[],'sen_label':[]} #for test
-        for label, comm, sentiment in zip(sentence_label, output, sentiment_label):
-            All['label'].append(label)
-            All['comm'].append(comm)
-            All['sen_label'].append(sentiment)
-            if sentiment == 0:
-                bad['label'].append(label)
-                bad['comm'].append(comm)
-            else:
-                good['label'].append(label)
-                good['comm'].append(comm)
-    
-        good_sentence = pd.DataFrame(good, columns = ['label','comm'])
-        bad_sentence = pd.DataFrame(bad, columns = ['label','comm'])   
-        all_sentence = pd.DataFrame(All, columns = ['label','comm','sen_label']) 
-         
-        self.all_sentence = all_sentence.drop_duplicates()
-        self.bad_sentence = bad_sentence.drop_duplicates()
-        self.good_sentence = good_sentence.drop_duplicates()
-        Filter_duplicated = ~all_sentence.duplicated() 
-        self.ground_truth = list(np.array(ground_truth)[Filter_duplicated]) #去除同句子同label
-
-        sentence_sim.data = self.all_sentence
-        out = sentence_sim.similarity()
-
-        for index,label in zip(out['index'],out['label']):###
-            self.all_sentence.at[index,'label']= label
-
-
+        self.good_sentence = data[Filter_Good].drop_duplicates()##same comm????
+        self.bad_sentence = data[Filter_Bad].drop_duplicates()
+        self.all_sentence = data.drop_duplicates() 
+        self.ground_truth = self.all_sentence['ground_truth'].to_list()
         self.all_sentence.to_csv('all_sentence.csv',index = False)
-        #去除同句子不同label
-        self.good = list(zip( [1]*len(self.good_sentence['comm'].drop_duplicates()),self.good_sentence['comm'].drop_duplicates().tolist()))
-        self.bad = list(zip( [0]*len(self.bad_sentence['comm'].drop_duplicates()),self.bad_sentence['comm'].drop_duplicates().tolist()))
-        self.all = list(zip(self.all_sentence['sen_label'].tolist(),self.all_sentence['comm'].tolist()))
 
-        return self.all 
+#         #去除同句子不同label
+        self.good = list(zip( [1]*len(self.good_sentence['sentence'].drop_duplicates()),self.good_sentence['sentence'].drop_duplicates().tolist()))
+        self.bad = list(zip( [0]*len(self.bad_sentence['sentence'].drop_duplicates()),self.bad_sentence['sentence'].drop_duplicates().tolist()))
+        self.all = list(zip(self.all_sentence['sentiment'].tolist(),self.all_sentence['sentence'].tolist()))
+
+        return self.all
