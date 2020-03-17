@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 torch.cuda.set_device(0)
 from tqdm import tqdm, trange
+import os
 from os import listdir
 from os.path import join
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -18,10 +19,12 @@ from nltk import word_tokenize, pos_tag
 from nltk.stem import WordNetLemmatizer
 from .Keyword_Merge import Keyword_Merge
 from .Sentence_Similarity import Sentence_Simlarity
+import json
+import pandas as pd
 
 keyword_merge = Keyword_Merge('model/booking_word2vec.model')
 # sentence_sim = Sentence_Simlarity()
-
+wordnet.ensure_loaded() 
 # In[1]:
 class Bert_NER:  
     def __init__(self,model_path,MAX_LEN=100):
@@ -29,8 +32,9 @@ class Bert_NER:
         self.MAX_LEN = 100
         self.model = BertForTokenClassification.from_pretrained(model_path)
         self.data=''
-        self.size = []
-        self.training_data = {'label':[],'sentence':[]}
+        self.size = []#
+        self.training_data = {'label':[],'sentence':[]}#
+        self.inputs = ''#
     def to_ids(self,):
         inputs = []
         masks = []
@@ -51,7 +55,7 @@ class Bert_NER:
                     masks.append(attention_masks)
         self.inputs= np.array(inputs).reshape(len(inputs),self.MAX_LEN)
         self.masks = np.array(masks).reshape(len(inputs),self.MAX_LEN)
-    def prediction(self,batch_size=300):
+    def prediction(self,hotel_name,batch_size=300):
         self.to_ids()
         self.model.cuda()
         self.model.eval()
@@ -73,6 +77,17 @@ class Bert_NER:
                 prediction = torch.max(F.softmax(outputs[0],dim=2), 2)[1]
                 prediction = prediction.cpu()
                 pred.extend(prediction.numpy().tolist())
+
+        ## for cache
+        # temp = np.array(pred)
+        # np.save('cache/'+hotel_name+"_pred.npy", temp)
+        # temp = np.array(self.size)
+        # np.save(hotel_name+"_size.npy", temp)
+        # np.save(hotel_name+"_inputs.npy", self.inputs)
+        # with open(hotel_name+'training_data.json', 'w') as f:
+        #     json.dump(self.training_data, f)
+
+
         return pred
     def to_csv(self,pred):
         output = {'sentence':[],'label':[]}
@@ -121,49 +136,55 @@ class Bert_NER:
             res.append(lemmatizer.lemmatize(word, pos=wordnet_pos))
 
         return res
-    def to_CoNLL(self,pred):
-        output = []
+    def to_CoNLL(self,pred,hotel_name):
         id2tags = {0:'B-KEY', 1:'B-ADJ', 2:'O'}
         sentence_label = []
-        review = pd.read_csv('ground_truth.csv', dtype={'comm': str})
+        review = pd.read_csv('cache/'+hotel_name+'ground_truth.csv', dtype={'comm': str})
         data = {'keyword':[],'adj':[],'sentiment':[],'sentence':[],'ground_truth':[]}
+        if os.path.isfile('cache/'+hotel_name+'_to_CoNLL.csv'):
+            data = pd.read_csv('cache/'+hotel_name+'_to_CoNLL.csv')
+            data['adj'] = data['adj'].map(lambda x: eval(x))
+            data['sentence'] = data['sentence'].map(lambda x: eval(x))
+        else:
+            #輸出文字是處理過的，可用self.training_data['sentence']取代
+            for sentence_pred,size,raw_data,sentiment,truth in zip(pred, self.size, self.inputs,self.training_data['label'],review['label']):
+                
+                token_list = []
+                comm_label = []#sentence_label
+                adj_label = []
+                #delete [ClS],[SEP]
+                sentence = raw_data[1:size-1] 
+                sentence_pred = sentence_pred[1:size-1]
+                sentence,tags = self.convert_to_original(sentence,sentence_pred)
+                sentence = self.lemmatize_sentence(sentence) ###????
 
-        #輸出文字是處理過的，可用self.training_data['sentence']取代
-        for sentence_pred,size,raw_data,sentiment,truth in zip(pred, self.size, self.inputs,self.training_data['label'],review['label']):
-            
-            token_list = []
-            comm_label = []#sentence_label
-            adj_label = []
-            #delete [ClS],[SEP]
-            sentence = raw_data[1:size-1] 
-            sentence_pred = sentence_pred[1:size-1]
-            sentence,tags = self.convert_to_original(sentence,sentence_pred)
-            sentence = self.lemmatize_sentence(sentence) ###????
+                for index in range(len(sentence)):
+                    label = id2tags.get(int(tags[index]))
+                    token = sentence[index]
+                    token_list.append((token,label))
+                    if label == 'B-KEY':
+                        comm_label.append(token)
+                        
+                    elif label == 'B-ADJ' : 
+                        adj_label.append(token)
 
-            for index in range(len(sentence)):
-                label = id2tags.get(int(tags[index]))
-                token = sentence[index]
-                token_list.append((token,label))
-                if label == 'B-KEY':
-                    comm_label.append(token)
-                    
-                elif label == 'B-ADJ' : 
-                    adj_label.append(token)
+                #1NF(First normal form)
+                for i in comm_label:
+                    data['keyword'].append(i)
+                    data['adj'].append(tuple(adj_label))
+                    data['sentiment'].append(sentiment)
+                    data['sentence'].append(tuple(token_list))
+                    data['ground_truth'].append(truth)
+                if len(comm_label) == 0:
+                    data['keyword'].append('')
+                    data['adj'].append(tuple(adj_label))
+                    data['sentiment'].append(sentiment)
+                    data['sentence'].append(tuple(token_list))
+                    data['ground_truth'].append(truth)
 
-           
-            #1NF(First normal form)
-            for i in comm_label:
-                data['keyword'].append(i)
-                data['adj'].append(tuple(adj_label))
-                data['sentiment'].append(sentiment)
-                data['sentence'].append(tuple(token_list))
-                data['ground_truth'].append(truth)
+            data = pd.DataFrame(data, columns = ['keyword','adj','sentiment','sentence','ground_truth'])
+            data.to_csv('cache/'+hotel_name+'_to_CoNLL.csv',index = False)
 
-        data = pd.DataFrame(data, columns = ['keyword','adj','sentiment','sentence','ground_truth'])
-        self.temp = data
-        print(data.keyword.value_counts()[0:5])
-
-        self.output = tuple(output)
 
         keyword_sorted = list(data.keyword.value_counts().index)
         sentence_label = keyword_merge.merge(keyword_sorted, data['keyword'])
@@ -171,16 +192,31 @@ class Bert_NER:
         
         Filter_Good = data['sentiment']==1
         Filter_Bad = data['sentiment'] == 0
-        good_keyword= {}
-        bad_keyword ={}
-        self.good_keyword_top5 = list(data[Filter_Good].keyword.value_counts().index[0:5])
-        self.bad_keyword_top5 = list(data[Filter_Bad].keyword.value_counts().index[0:5])
+
+        self.good_keyword_top5 = list(data[Filter_Good].keyword.value_counts().index)
+        self.bad_keyword_top5 = list(data[Filter_Bad].keyword.value_counts().index)
 
         self.good_sentence = data[Filter_Good].drop_duplicates()##same comm????
         self.bad_sentence = data[Filter_Bad].drop_duplicates()
         self.all_sentence = data.drop_duplicates() 
         self.ground_truth = self.all_sentence['ground_truth'].to_list()
-        self.all_sentence.to_csv('all_sentence.csv',index = False)
+        # self.all_sentence.to_csv('all_sentence.csv',index = False)
+
+        good_keyword_top5 = []
+        for i in self.good_keyword_top5:
+            Filter = self.good_sentence ['keyword']==i
+            clean_data = self.good_sentence[Filter]
+            if len(clean_data)>10:
+                good_keyword_top5.append(i)
+        self.good_keyword_top5 = good_keyword_top5
+
+        bad_keyword_top5 = []
+        for i in self.bad_keyword_top5:
+            Filter = self.bad_sentence ['keyword']==i
+            clean_data = self.bad_sentence[Filter]
+            if len(clean_data)>10:
+                bad_keyword_top5.append(i)
+        self.bad_keyword_top5 = bad_keyword_top5
 
 #         #去除同句子不同label
         self.good = list(zip( [1]*len(self.good_sentence['sentence'].drop_duplicates()),self.good_sentence['sentence'].drop_duplicates().tolist()))

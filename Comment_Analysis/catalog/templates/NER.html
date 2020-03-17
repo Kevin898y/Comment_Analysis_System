@@ -2,8 +2,8 @@
 
 {% block menu %}
     <li><a href="{% url 'index' %}">Home</a></li>
-    <li ><a href="{% url 'crawl' %}">Crawl</a></li>
-    <li class="current_page_item"><a href="{% url 'ner' %}">Keyword</a></li>
+    <li ><a href="{% url 'crawl' hotel_name %}">Crawl</a></li>
+    <li class="current_page_item"><a href="{% url 'ner' hotel_name %}">Keyword</a></li>
 {% endblock %}
 
 
@@ -23,21 +23,23 @@
   {% if id <= good_keyword_size %}
     {% for keyword in good_keyword_top5 %}
       {% if forloop.counter0 == id %}
-        <li class="current_page_item"><a href="{% url 'top1' forloop.counter0 %}">{{keyword}}</a></li>
+        <li class="current_page_item"><a href="{% url 'top1' hotel_name forloop.counter0 %}">{{keyword}}</a></li>
       {% else %}
-        <li ><a  class= advantage href="{% url 'top1' forloop.counter0 %}">{{keyword}}</a></li>
+        <li ><a  class= advantage href="{% url 'top1' hotel_name forloop.counter0 %}">{{keyword}}</a></li>
       {% endif %}
     {% endfor %}
 
   {% endif %}
+
+
   
   
   {%if id > good_keyword_size  and id <= good_keyword_size|add:bad_keyword_size %} 
     {% for keyword in bad_keyword_top5 %}
       {% if forloop.counter|add:good_keyword_size == id %}
-        <li class="current_page_item"><a href="{% url 'top1' forloop.counter|add:good_keyword_size  %}">{{keyword}}</a></li>
+        <li class="current_page_item"><a href="{% url 'top1' hotel_name forloop.counter|add:good_keyword_size  %}">{{keyword}}</a></li>
       {% else %}
-        <li ><a  class= disadvantage href="{% url 'top1' forloop.counter|add:good_keyword_size %}">{{keyword}}</a></li>
+        <li ><a  class= disadvantage href="{% url 'top1' hotel_name forloop.counter|add:good_keyword_size %}">{{keyword}}</a></li>
       {% endif %}
     {% endfor %}
   {% endif %}
@@ -48,27 +50,34 @@
 
 {% endblock %}
 
-
 {% block content %}
 
 <div id="content">
   <div id="keyword">
     <ul>
       {%if id > good_keyword_size|add:bad_keyword_size or id is None %} 
-        <li  class="current_page_item"><a href="{% url 'sidebar' 2%}">All</a></li>
-        <li><a href="{% url 'sidebar' 1%}">Advantage</a></li>
-        <li><a href="{% url 'sidebar' 0%}">Disadvantage</a></li>
+        <li  class="current_page_item"><a href="{% url 'sidebar' hotel_name 2%}">All</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 1%}">Advantage</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 0%}">Disadvantage</a></li>
       {% elif id <= good_keyword_size  %}
-        <li><a href="{% url 'sidebar' 2%}">All</a></li>
-        <li  class="current_page_item"><a href="{% url 'sidebar' 1%}">Advantage</a></li>
-        <li><a href="{% url 'sidebar' 0%}">Disadvantage</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 2%}">All</a></li>
+        <li  class="current_page_item"><a href="{% url 'sidebar' hotel_name 1%}">Advantage</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 0%}">Disadvantage</a></li>
       {% else %}
-        <li><a href="{% url 'sidebar' 2%}">All</a></li>
-        <li><a href="{% url 'sidebar' 1%}">Advantage</a></li>
-        <li class="current_page_item"><a href="{% url 'sidebar' 0%}">Disadvantage</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 2%}">All</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 1%}">Advantage</a></li>
+        <li class="current_page_item"><a href="{% url 'sidebar' hotel_name 0%}">Disadvantage</a></li>
       {% endif %}
     </ul>
 
+  </div>
+
+  <div id="keyword">
+    <ul>
+      {% for keyword in adj_top %}
+        <li><a  href="{% url 'top2' hotel_name id forloop.counter0 %}">{{keyword}}</a></li>
+      {% endfor %}
+    </ul>
   </div>
 
 
@@ -104,6 +113,8 @@
                   {% for token,label in comm %}
                     {% if label == "B-KEY" %}
                       <font color="red">{{token}}</font>
+                    {% elif label == "B-ADJ" %}
+                      <font color="blue">{{token}}</font>
                     {% else %}
                       {{token}} 
                     {% endif %}

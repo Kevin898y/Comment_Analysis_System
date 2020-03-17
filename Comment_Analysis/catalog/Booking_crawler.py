@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 import nltk.data
 from .Split_Class import Bert_Split
+import os
 
 
 
@@ -49,7 +50,7 @@ class Booking_crawler:
         pagename_start = self.url.find((url_area+'/'))
         pagename_end = self.url[pagename_start:].find('.en-gb')
         pagename = self.url[pagename_start+3 : pagename_start+pagename_end]
-
+        self.pagename = pagename
         srpvid_start = self.url.find('srpvid=')
         srpvid_end = self.url[srpvid_start:].find(';')
         srpvid = self.url[srpvid_start:srpvid_start+srpvid_end+1] 
@@ -76,7 +77,7 @@ class Booking_crawler:
                 Clauses.append(temp)
         return Clauses
     def ToCSV(self):
-        review = pd.read_csv('review.csv')
+        review = pd.read_csv('cache/'+self.pagename+'_review.csv')
         raw_data= {'label':[],'comm':[]}
         for label,comm in zip(review['label'],review['comm'] ) :
             label = int(label)
@@ -87,17 +88,24 @@ class Booking_crawler:
                     raw_data['label'].append(label)
                     raw_data['comm'].append(str(j))
         df = pd.DataFrame(raw_data, columns = ['label','comm'])
-        df.to_csv('review.csv',index = False)
+        df.to_csv('cache/'+self.pagename+'_review.csv',index = False)
         # 分割句子
-        split = Bert_Split('model/DeepSegment/','review.csv')
+        split = Bert_Split('model/DeepSegment/','cache/'+self.pagename+'_review.csv')
         p = split.prediction()
         df = split.to_csv(p)
-        df.to_csv('scrapy.csv',index = False)
-        return df
-
+        df.to_csv('cache/'+self.pagename+'.csv',index = False)
+        return df,self.pagename
+    def geturl(self,url):
+        res = requests.head(url)
+        url = res.headers.get('location')
+        return url
     def Scrapy_Review(self):
+        # self.url = self.geturl(self.url)
         self.Find_Review_Url()
-        
+        if os.path.isfile('cache/'+self.pagename+'.csv'):
+            return True
+
+        # print(self.url)
         # pattern_start = self.url.find('offset')
         # pattern_end = self.url[pattern_start:].find(';')
         # url_pattern = self.url[pattern_start+7 :pattern_start+pattern_end]
@@ -130,4 +138,5 @@ class Booking_crawler:
                             else:
                                 raw_data['label'].append(0)
         df = pd.DataFrame(raw_data, columns = ['label','comm'])
-        df.to_csv('review.csv',index = False)
+        df.to_csv('cache/'+self.pagename+'_review.csv',index = False)
+        return False

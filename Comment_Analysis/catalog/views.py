@@ -13,24 +13,38 @@ import numpy as np
 from catalog.forms import SearchForm
 from catalog.forms import CheckForm
 from catalog.forms import UploadFileForm
-from pip._vendor.html5lib.filters.sanitizer import Filter
+# from pip._vendor.html5lib.filters.sanitizer import Filter
+import os
+import json
 
 # ke = Keyword_Extraction('wordtovector/GoogleNews-vectors-negative300.bin','data/keyword.csv','1')
-ner = Bert_NER('model/NER2/')
+# ner = Bert_NER('model/NER3/')
+ner = Bert_NER('model/NER3/') 
 sen = Review_Sentiment('model/sentiment/')
-labels = []
-
 filename= '' 
+
+
 def Search(request):
+
     if request.method == 'POST':
         form = SearchForm(request.POST)
         if form.is_valid():
             url = form.cleaned_data['booking_url']
             crawler = Booking_crawler(url)
-            crawler.Scrapy_Review()
-            review =crawler.ToCSV()
-            s = review['comm']
-            return render(request,'simple_crawl.html',locals())
+            isfile = crawler.Scrapy_Review()
+            s = []
+            if isfile:
+                hotel_name = crawler.pagename
+                review = pd.read_csv('cache/'+hotel_name+'.csv')
+                s = review['comm']
+            else:
+                review,hotel_name =crawler.ToCSV()
+                s = review['comm']
+            context = {
+                's': s,
+                'hotel_name':hotel_name,
+            }
+            return render(request,'simple_crawl.html',context)
     else:
         form = SearchForm(initial={'booking_url': 'url'})
 
@@ -39,45 +53,130 @@ def Search(request):
     }
     return render(request,'home.html', context)
     
-def top1(request, id): #to do
+def top1(request,slug, id): #to do
     temp = id
     if id >len(ner.good_keyword_top5):
         id = id-len(ner.good_keyword_top5)-1
 
         Filter = ner.bad_sentence ['keyword']==ner.bad_keyword_top5[id]
         clean_data = ner.bad_sentence[Filter]
-        data = list(zip( [0]*len(clean_data['keyword']),clean_data['sentence'] ))
-        #for test 可能有多個room
-        Filter = ner.all_sentence ['keyword']==ner.bad_keyword_top5[id]
-        Filter2 = ner.all_sentence ['sentiment']==0
-        ground_truth = list(np.array(ner.ground_truth)[Filter & Filter2])
-        data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))  
+        # data = list(zip( [0]*len(clean_data['keyword']),clean_data['sentence'] ))
+        data = list(zip(clean_data['ground_truth'], [0]*len(clean_data['keyword']),clean_data['sentence'] ))
+        # adjtop = clean_data.adj.value_counts().index
+
+        all_adj = {}
+        for i in clean_data['adj']:
+            for adj in i:
+                if adj not in all_adj:
+                    all_adj[adj] = 1
+                else:
+                    all_adj[adj]+=1
+        adjtop = sorted(all_adj.items(), key=lambda d: d[1],reverse=True)
+        # adjtop = [i[0] for i in adjtop]
+        adj_top = []
+        for i in adjtop:
+            if i[1]>len(clean_data['keyword'])/12 and i[1]>=3:
+                adj_top.append(i[0])
+        adjtop = adj_top
+        
 
     else :
         Filter = ner.good_sentence ['keyword']==ner.good_keyword_top5[id]
         clean_data = ner.good_sentence[Filter]
-        data = list(zip( [1]*len(clean_data['keyword']),clean_data['sentence'] ))
-
-        #for test
-        Filter = ner.all_sentence ['keyword']==ner.good_keyword_top5[id]
-        Filter2 = ner.all_sentence ['sentiment']==1
-        ground_truth = list(np.array(ner.ground_truth)[Filter & Filter2])
-        data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))  
-
+        # data = list(zip( [1]*len(clean_data['keyword']),clean_data['sentence'] ))
+        data = list(zip(clean_data['ground_truth'], [1]*len(clean_data['keyword']),clean_data['sentence'] ))
+        all_adj = {}
+        for i in clean_data['adj']:
+            for adj in i:
+                if adj not in all_adj:
+                    all_adj[adj] = 1
+                else:
+                    all_adj[adj]+=1
+        adjtop = sorted(all_adj.items(), key=lambda d: d[1],reverse=True)
+        # adjtop = [i[0] for i in adjtop]
+        adj_top = []
+        for i in adjtop:
+            if i[1]>len(clean_data['keyword'])/12 and i[1]>=3:
+                adj_top.append(i[0])
+        adjtop = adj_top
+        
+          
+    
     context = {
         'good_keyword_top5': ner.good_keyword_top5,
         'bad_keyword_top5': ner.bad_keyword_top5,
         'good_keyword_size':len(ner.good_keyword_top5),
         'bad_keyword_size': len(ner.bad_keyword_top5),
+        'adj_top':adjtop,
         'data':data,
         'id':temp,
+        'hotel_name':slug,
     }
 
     return render(request,'NER.html',context)
 
-def sidebar(request, id): #to do
+def top2(request, slug,id, adj_num): #to do
     temp = id
-  
+    if id >len(ner.good_keyword_top5):
+        id = id-len(ner.good_keyword_top5)-1
+
+        Filter = ner.bad_sentence ['keyword']==ner.bad_keyword_top5[id]
+        clean_data = ner.bad_sentence[Filter]
+        all_adj = {}
+        for i in clean_data['adj']:
+            for adj in i:
+                if adj not in all_adj:
+                    all_adj[adj] = 1
+                else:
+                    all_adj[adj]+=1
+        adjtop = sorted(all_adj.items(), key=lambda d: d[1],reverse=True)
+        adj_top = []
+        for i in adjtop:
+            if i[1]>len(clean_data['keyword'])/12 and i[1]>=3:
+                adj_top.append(i[0])
+
+        data = []
+        for ground_truth,keyword,sentence,adj in zip(clean_data['ground_truth'], [0]*len(clean_data['keyword']),clean_data['sentence'],clean_data['adj'] ):
+            if adj_top[adj_num] in adj:
+                data.append((ground_truth,keyword,sentence))
+
+    else :
+        Filter = ner.good_sentence ['keyword']==ner.good_keyword_top5[id]
+        clean_data = ner.good_sentence[Filter]
+        all_adj = {}
+        for i in clean_data['adj']:
+            for adj in i:
+                if adj not in all_adj:
+                    all_adj[adj] = 1
+                else:
+                    all_adj[adj]+=1
+        adjtop = sorted(all_adj.items(), key=lambda d: d[1],reverse=True)
+        adj_top = []
+        for i in adjtop:
+            if i[1]>len(clean_data['keyword'])/12 and i[1]>=3:
+                adj_top.append(i[0])
+
+
+        data = []
+        for ground_truth,keyword,sentence,adj in zip(clean_data['ground_truth'], [1]*len(clean_data['keyword']),clean_data['sentence'],clean_data['adj'] ):
+            if adj_top[adj_num] in adj:
+                data.append((ground_truth,keyword,sentence))
+         
+    adjtop = adj_top
+    context = {
+        'good_keyword_top5': ner.good_keyword_top5,
+        'bad_keyword_top5': ner.bad_keyword_top5,
+        'good_keyword_size':len(ner.good_keyword_top5),
+        'bad_keyword_size': len(ner.bad_keyword_top5),
+        'adj_top':adjtop,
+        'data':data,
+        'id':temp,
+        'hotel_name':slug,
+    }
+
+    return render(request,'NER.html',context)
+def sidebar(request, slug,id): #to do
+    temp = id
     # for test
     Filter_duplicated = ~ner.all_sentence['sentence'].duplicated() 
 
@@ -116,6 +215,7 @@ def sidebar(request, id): #to do
         'bad_keyword_size': len(ner.bad_keyword_top5)+1,
         'data':data,
         'id':temp,
+        'hotel_name':slug,
     } 
 
     return render(request,'NER.html',context)
@@ -170,16 +270,19 @@ def Split_Label(request):
     }
     return render(request, 'Split_Label.html', context)
 
-def simple_crawl(request):  #not use
+def simple_crawl(request,slug):  #not use
     # url = 'https://www.booking.com/hotel/gb/italianflat-brompton.en-gb.html?aid=304142;label=gen173nr-1FCAEoggI46AdIM1gEaOcBiAEBmAEwuAEXyAEM2AEB6AEB-AELiAIBqAID;sid=d1c049c0e9123fddfa3b6174f141e95b;dest_id=-2601889;dest_type=city;dist=0;hapos=3;hpos=3;room1=A%2CA;sb_price_type=total;sr_order=popularity;srepoch=1550862196;srpvid=12a885fa98b8042d;type=total;ucfs=1&#hotelTmplhttps://www.booking.com/hotel/gb/italianflat-brompton.en-gb.html?aid=304142;label=gen173nr-1FCAEoggI46AdIM1gEaOcBiAEBmAEwuAEXyAEM2AEB6AEB-AELiAIBqAID;sid=d1c049c0e9123fddfa3b6174f141e95b;dest_id=-2601889;dest_type=city;dist=0;hapos=3;hpos=3;room1=A%2CA;sb_price_type=total;sr_order=popularity;srepoch=1550862196;srpvid=12a885fa98b8042d;type=total;ucfs=1&#hotelTmpl'
     # url = request
     # temp = tes
     # crawler = Booking_crawler(url)
     # crawler.Scrapy_Review()
-    review = pd.read_csv('review.csv')
+    review = pd.read_csv('cache/'+slug+'.csv')
     s = review['comm']
-    value = 0
-    return render(request,'simple_crawl.html',locals())
+    context = {
+        's': s,
+        'hotel_name':slug,
+    }
+    return render(request,'simple_crawl.html',context)
 
 def sentiment(request):
     # review = pd.read_csv('ground_truth.csv')
@@ -195,18 +298,24 @@ def sentiment(request):
  
     return render(request,'sentiment.html',locals())
 
-def Ner(request):
-    review = pd.read_csv('scrapy.csv', dtype={'comm': str})
-    pred = sen.prediction(review)
-    df = sen.to_csv(pred)
+def Ner(request,slug):
+    hotel_name = slug
+    review = pd.read_csv('cache/'+hotel_name+'.csv', dtype={'comm': str})
 
-    ner.data = pd.read_csv('review_label.csv')
-    pred = ner.prediction()
-    data = ner.to_CoNLL(pred)
+    pred = sen.prediction(review)
+    df = sen.to_csv(pred,hotel_name)
+ 
+    ner.data = pd.read_csv('cache/'+hotel_name+'_label.csv')
+    data =0
+    if os.path.isfile('cache/'+hotel_name+'_to_CoNLL.csv'):
+        data = ner.to_CoNLL(pred,hotel_name)
+    else:
+        pred = ner.prediction(hotel_name)
+        data = ner.to_CoNLL(pred,hotel_name)
 
     Filter = ~ner.all_sentence['sentence'].duplicated() 
-    ground_truth = list(np.array(ner.ground_truth)[Filter])
-    ground_truth = ner.ground_truth
+    ground_truth = list(np.array(ner.ground_truth)[Filter]) 
+    # ground_truth = ner.ground_truth
     data = list(np.array(data)[Filter])
     data = list(zip(ground_truth,[i[0]for i in data],[i[1] for i in data] ))
     
@@ -218,10 +327,11 @@ def Ner(request):
     context = {
         'good_keyword_top5': ner.good_keyword_top5,
         'bad_keyword_top5': ner.bad_keyword_top5,
+        'hotel_name':hotel_name,
         # 'adj_top5':ner.adj_top5,
         'data':data,
     }
-    return render(request,'NER.html',context)
+    return render(request,'NER.html',context= context)
 
 #def keyword_list(request):
     # extractor = pke.unsupervised.YAKE()
