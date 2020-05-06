@@ -26,7 +26,7 @@ class Booking_crawler:
     
     def load_soup_online(self):
         headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'}
-        req = requests.get(self.url,headers=headers)
+        req = requests.get(self.url,headers=headers,verify=False)
         data = req.text
         req.close()
         self.soup = BeautifulSoup(data, 'html.parser')
@@ -37,7 +37,14 @@ class Booking_crawler:
         area_end = self.url[area_start:].find('/')
         url_area = self.url[area_start: area_start+area_end]
         
-        urlbase1 = 'https://www.booking.com/reviewlist.en-gb.html?'
+        country_start = self.url[area_start+area_end:].find('.')+1
+        country_end = self.url[area_start+area_end+country_start:].find('.')
+        country = self.url[area_start+area_end+country_start: area_start+area_end+country_start+country_end]
+        
+        
+        urlbase1 = 'https://www.booking.com/reviewlist.'+country+'.html?'
+        if len(country)==0:
+            urlbase1 = 'https://www.booking.com/reviewlist.html?'
         urlbase2 = 'cc1='+url_area+';dist=1;'
         urlbase3 = 'r_lang=en;'
         urlbase4 = 'type=total&;offset=0;rows=10'
@@ -48,9 +55,11 @@ class Booking_crawler:
         pattern = pattern.replace('&', ';')
 
         pagename_start = self.url.find((url_area+'/'))
-        pagename_end = self.url[pagename_start:].find('.en-gb')
+        pagename_end = self.url[pagename_start:].find('.'+country)
         pagename = self.url[pagename_start+3 : pagename_start+pagename_end]
+
         self.pagename = pagename
+
         srpvid_start = self.url.find('srpvid=')
         srpvid_end = self.url[srpvid_start:].find(';')
         srpvid = self.url[srpvid_start:srpvid_start+srpvid_end+1] 

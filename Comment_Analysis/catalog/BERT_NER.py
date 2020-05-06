@@ -22,7 +22,7 @@ from .Sentence_Similarity import Sentence_Simlarity
 import json
 import pandas as pd
 
-keyword_merge = Keyword_Merge('model/booking_word2vec.model')
+keyword_merge = Keyword_Merge('model/booking_word2vec.model',"model/GoogleNews-vectors-negative300.bin")
 # sentence_sim = Sentence_Simlarity()
 wordnet.ensure_loaded() 
 # In[1]:
@@ -140,13 +140,14 @@ class Bert_NER:
         id2tags = {0:'B-KEY', 1:'B-ADJ', 2:'O'}
         sentence_label = []
         review = pd.read_csv('cache/'+hotel_name+'ground_truth.csv', dtype={'comm': str})
-        data = {'keyword':[],'adj':[],'sentiment':[],'sentence':[],'ground_truth':[]}
+        data = {'uid':[],'keyword':[],'adj':[],'sentiment':[],'sentence':[],'ground_truth':[]}
         if os.path.isfile('cache/'+hotel_name+'_to_CoNLL.csv'):
             data = pd.read_csv('cache/'+hotel_name+'_to_CoNLL.csv')
             data['adj'] = data['adj'].map(lambda x: eval(x))
             data['sentence'] = data['sentence'].map(lambda x: eval(x))
         else:
             #輸出文字是處理過的，可用self.training_data['sentence']取代
+            uid = 0
             for sentence_pred,size,raw_data,sentiment,truth in zip(pred, self.size, self.inputs,self.training_data['label'],review['label']):
                 
                 token_list = []
@@ -170,25 +171,31 @@ class Bert_NER:
 
                 #1NF(First normal form)
                 for i in comm_label:
+                    data['uid'].append(uid)
                     data['keyword'].append(i)
                     data['adj'].append(tuple(adj_label))
                     data['sentiment'].append(sentiment)
                     data['sentence'].append(tuple(token_list))
                     data['ground_truth'].append(truth)
                 if len(comm_label) == 0:
+                    data['uid'].append(uid)
                     data['keyword'].append('')
                     data['adj'].append(tuple(adj_label))
                     data['sentiment'].append(sentiment)
                     data['sentence'].append(tuple(token_list))
                     data['ground_truth'].append(truth)
-
-            data = pd.DataFrame(data, columns = ['keyword','adj','sentiment','sentence','ground_truth'])
+                uid+=1
+                
+            data = pd.DataFrame(data, columns = ['uid','keyword','adj','sentiment','sentence','ground_truth'])
+            keyword_sorted = list(data.keyword.value_counts().index)
+            sentence_label = keyword_merge.merge(keyword_sorted, data['keyword'])
+            data['keyword'] = sentence_label
+            data['adj'] = keyword_merge.adj_merge(data['adj'])
+            data = data.drop_duplicates()
             data.to_csv('cache/'+hotel_name+'_to_CoNLL.csv',index = False)
 
 
-        keyword_sorted = list(data.keyword.value_counts().index)
-        sentence_label = keyword_merge.merge(keyword_sorted, data['keyword'])
-        data['keyword'] = sentence_label
+        
         
         Filter_Good = data['sentiment']==1
         Filter_Bad = data['sentiment'] == 0
@@ -196,31 +203,35 @@ class Bert_NER:
         self.good_keyword_top5 = list(data[Filter_Good].keyword.value_counts().index)
         self.bad_keyword_top5 = list(data[Filter_Bad].keyword.value_counts().index)
 
-        self.good_sentence = data[Filter_Good].drop_duplicates()##same comm????
-        self.bad_sentence = data[Filter_Bad].drop_duplicates()
-        self.all_sentence = data.drop_duplicates() 
-        self.ground_truth = self.all_sentence['ground_truth'].to_list()
+        self.good_sentence = data[Filter_Good]
+        self.bad_sentence = data[Filter_Bad] 
+        # self.all_sentence = data.drop_duplicates() 
+        # self.ground_truth = self.all_sentence['ground_truth'].to_list()
         # self.all_sentence.to_csv('all_sentence.csv',index = False)
 
         good_keyword_top5 = []
         for i in self.good_keyword_top5:
-            Filter = self.good_sentence ['keyword']==i
-            clean_data = self.good_sentence[Filter]
-            if len(clean_data)>10:
-                good_keyword_top5.append(i)
-        self.good_keyword_top5 = good_keyword_top5
+            if i !='':
+                Filter = self.good_sentence ['keyword']==i
+                clean_data = self.good_sentence[Filter]
+                if len(clean_data)>10 or len(clean_data)>=len(self.good_keyword_top5)/10:
+                    good_keyword_top5.append(i)
+        temp = np.array(good_keyword_top5)
+        np.save('cache/'+hotel_name+"_good_keyword_top5.npy", temp)       
 
         bad_keyword_top5 = []
         for i in self.bad_keyword_top5:
-            Filter = self.bad_sentence ['keyword']==i
-            clean_data = self.bad_sentence[Filter]
-            if len(clean_data)>10:
-                bad_keyword_top5.append(i)
-        self.bad_keyword_top5 = bad_keyword_top5
+            if i != '':
+                Filter = self.bad_sentence ['keyword']==i
+                clean_data = self.bad_sentence[Filter]
+                if len(clean_data)>10 or len(clean_data)>len(self.bad_keyword_top5)/10:
+                    bad_keyword_top5.append(i)
+        temp = np.array(bad_keyword_top5)
+        np.save('cache/'+hotel_name+"_bad_keyword_top5.npy", temp)       
 
 #         #去除同句子不同label
-        self.good = list(zip( [1]*len(self.good_sentence['sentence'].drop_duplicates()),self.good_sentence['sentence'].drop_duplicates().tolist()))
-        self.bad = list(zip( [0]*len(self.bad_sentence['sentence'].drop_duplicates()),self.bad_sentence['sentence'].drop_duplicates().tolist()))
-        self.all = list(zip(self.all_sentence['sentiment'].tolist(),self.all_sentence['sentence'].tolist()))
+        # self.good = list(zip( [1]*len(self.good_sentence['sentence'].drop_duplicates()),self.good_sentence['sentence'].drop_duplicates().tolist()))
+        # self.bad = list(zip( [0]*len(self.bad_sentence['sentence'].drop_duplicates()),self.bad_sentence['sentence'].drop_duplicates().tolist()))
+        # self.all = list(zip(self.all_sentence['sentiment'].tolist(),self.all_sentence['sentence'].tolist()))
 
-        return self.all
+        # return self.all
