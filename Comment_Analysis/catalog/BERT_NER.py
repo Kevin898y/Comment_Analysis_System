@@ -19,10 +19,12 @@ from nltk import word_tokenize, pos_tag
 from nltk.stem import WordNetLemmatizer
 from .Keyword_Merge import Keyword_Merge
 from .Sentence_Similarity import Sentence_Simlarity
+from .Keyword_Clustering import Keyword_Clustering
 import json
 import pandas as pd
 
-keyword_merge = Keyword_Merge('model/booking_word2vec.model',"model/GoogleNews-vectors-negative300.bin")
+keyword_merge = Keyword_Merge('model/booking_word2vec3.model',"model/GoogleNews-vectors-negative300.bin")
+keyword_clustering = Keyword_Clustering([],'model/merge.json')
 # sentence_sim = Sentence_Simlarity()
 wordnet.ensure_loaded() 
 # In[1]:
@@ -194,44 +196,42 @@ class Bert_NER:
             data = data.drop_duplicates()
             data.to_csv('cache/'+hotel_name+'_to_CoNLL.csv',index = False)
 
-
-        
-        
         Filter_Good = data['sentiment']==1
         Filter_Bad = data['sentiment'] == 0
 
-        self.good_keyword_top5 = list(data[Filter_Good].keyword.value_counts().index)
-        self.bad_keyword_top5 = list(data[Filter_Bad].keyword.value_counts().index)
+        good_sentence = data[Filter_Good]
+        bad_sentence = data[Filter_Bad] 
 
-        self.good_sentence = data[Filter_Good]
-        self.bad_sentence = data[Filter_Bad] 
-        # self.all_sentence = data.drop_duplicates() 
-        # self.ground_truth = self.all_sentence['ground_truth'].to_list()
-        # self.all_sentence.to_csv('all_sentence.csv',index = False)
+        keyword_clustering.data = good_sentence
+        top_good = keyword_clustering.clustering()
+        with open('cache/top_good.json', 'w') as f:
+            json.dump(top_good, f)
 
-        good_keyword_top5 = []
-        for i in self.good_keyword_top5:
-            if i !='':
-                Filter = self.good_sentence ['keyword']==i
-                clean_data = self.good_sentence[Filter]
-                if len(clean_data)>10 or len(clean_data)>=len(self.good_keyword_top5)/10:
-                    good_keyword_top5.append(i)
-        temp = np.array(good_keyword_top5)
-        np.save('cache/'+hotel_name+"_good_keyword_top5.npy", temp)       
+        keyword_clustering.data = bad_sentence
+        top_bad = keyword_clustering.clustering()
+        with open('cache/top_bad.json', 'w') as f:
+            json.dump(top_bad, f)
 
-        bad_keyword_top5 = []
-        for i in self.bad_keyword_top5:
-            if i != '':
-                Filter = self.bad_sentence ['keyword']==i
-                clean_data = self.bad_sentence[Filter]
-                if len(clean_data)>10 or len(clean_data)>len(self.bad_keyword_top5)/10:
-                    bad_keyword_top5.append(i)
-        temp = np.array(bad_keyword_top5)
-        np.save('cache/'+hotel_name+"_bad_keyword_top5.npy", temp)       
 
-#         #去除同句子不同label
-        # self.good = list(zip( [1]*len(self.good_sentence['sentence'].drop_duplicates()),self.good_sentence['sentence'].drop_duplicates().tolist()))
-        # self.bad = list(zip( [0]*len(self.bad_sentence['sentence'].drop_duplicates()),self.bad_sentence['sentence'].drop_duplicates().tolist()))
-        # self.all = list(zip(self.all_sentence['sentiment'].tolist(),self.all_sentence['sentence'].tolist()))
+        # self.good_keyword_top5 = list(data[Filter_Good].keyword.value_counts().index)
+        # self.bad_keyword_top5 = list(data[Filter_Bad].keyword.value_counts().index)
+        # good_keyword_top5 = []
+        # for i in self.good_keyword_top5:
+        #     if i !='':
+        #         Filter = self.good_sentence ['keyword']==i
+        #         clean_data = self.good_sentence[Filter]
+        #         if len(clean_data)>10 or len(clean_data)>=len(self.good_keyword_top5)/10:
+        #             good_keyword_top5.append(i)
+        # temp = np.array(good_keyword_top5)
+        # np.save('cache/'+hotel_name+"_good_keyword_top5.npy", temp)       
 
-        # return self.all
+        # bad_keyword_top5 = []
+        # for i in self.bad_keyword_top5:
+        #     if i != '':
+        #         Filter = self.bad_sentence ['keyword']==i
+        #         clean_data = self.bad_sentence[Filter]
+        #         if len(clean_data)>10 or len(clean_data)>len(self.bad_keyword_top5)/10:
+        #             bad_keyword_top5.append(i)
+        # temp = np.array(bad_keyword_top5)
+        # np.save('cache/'+hotel_name+"_bad_keyword_top5.npy", temp)       
+

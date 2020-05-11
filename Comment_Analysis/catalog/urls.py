@@ -10,12 +10,11 @@ urlpatterns = [
     path('ner/<slug:slug>/', views.Ner, name='ner'),
     # path('keyword_list/', views.keyword_list , name='keyword_list'),
     path('Keyword_Extraction/', views.keyword , name='keyword'),
-    path('top/<slug:slug>/<int:id>/', views.top1, name='top1'),
+    path('top/<slug:hotel_name>/<int:id>/<slug:keyowrd>/', views.top_keyowrd, name='top_keyowrd'),
+    path('top/<slug:hotel_name>/<int:id>/<slug:keyowrd>/<int:adj_num>', views.top_adj, name='top_adj'),
     path('sidebar/<slug:slug>/<int:id>/', views.sidebar, name='sidebar'),
     # path('top/', include('Comment_Analysis.catalog.urls')),
-    path('top/<slug:slug>/<int:id>/<int:adj_num>', views.top2, name='top2'),
-    # path('top3/', views.top3, name='top3'),
-    # path('top4/', views.top4, name='top4'),
-    # path('top5/', views.top5, name='top5'),
+   
+
  
 ]

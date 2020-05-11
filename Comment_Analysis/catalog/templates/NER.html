@@ -18,39 +18,70 @@
 {% endblock %}
 
 {% block sidebar %}
-<div id="keyword">
+<!-- <div id="keyword"> -->
 <ul>
   {% if id <= good_keyword_size %}
-    <details>
-      <summary>Keyword</summary>
+    <li>
+        {% for key, value in top_good.items %}
 
-      {% for keyword in good_keyword_top5 %}
-        {% if forloop.counter0 == id %}
-          <li class="current_page_item"><a href="{% url 'top1' hotel_name forloop.counter0 %}">{{keyword}}</a></li>
-        {% else %}
-          <li ><a  class= advantage href="{% url 'top1' hotel_name forloop.counter0 %}">{{keyword}}</a></li>
-        {% endif %}
-      {% endfor %}
-      
-    </details>
+          {% if keyowrd == key %}
+            <h2 class="current_page_item"> <a   href="{% url 'top_keyowrd' hotel_name forloop.counter key %}">{{key}}</a></h2>
+          {% else %}
+            <h2> <a  href="{% url 'top_keyowrd' hotel_name id key %}">{{key}}</a></h2>
+          {% endif %}
+
+          {% if value|length > 0 %} 
+            <ul>
+              {% for word in value %}
+                {% if word == keyowrd %}
+                  <li class="current_page_item">
+                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}</a>
+                  </li>
+                {% else %}
+                  <li>
+                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}</a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+            </ul> 
+          {% endif %}
+
+        {% endfor %}  
+    </li>
   {% endif %}
-
-
-  
   
   {%if id > good_keyword_size  and id <= good_keyword_size|add:bad_keyword_size %} 
-    {% for keyword in bad_keyword_top5 %}
-      {% if forloop.counter|add:good_keyword_size == id %}
-        <li class="current_page_item"><a href="{% url 'top1' hotel_name forloop.counter|add:good_keyword_size  %}">{{keyword}}</a></li>
-      {% else %}
-        <li ><a  class= disadvantage href="{% url 'top1' hotel_name forloop.counter|add:good_keyword_size %}">{{keyword}}</a></li>
-      {% endif %}
-    {% endfor %}
+    <li>
+      {% for  key, value in top_bad.items %}
+        {% if keyowrd == key %}
+          <h2 class="current_page_item"> <a   href="{% url 'top_keyowrd' hotel_name forloop.counter key %}">{{key}}</a></h2>
+        {% else %}
+          <h2> <a  href="{% url 'top_keyowrd' hotel_name id key %}">{{key}}</a></h2>
+        {% endif %}
+
+        {% if value|length > 0 %} 
+            <ul>
+              {% for word in value %}
+                {% if word == keyowrd %}
+                  <li class="current_page_item">
+                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}</a>
+                  </li>
+                {% else %}
+                  <li>
+                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}</a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+            </ul> 
+        {% endif %}
+      
+      {% endfor %}
+    </li>
   {% endif %}
 
 
 </ul>
-</div>
+<!-- </div> -->
 
 {% endblock %}
 
@@ -79,9 +110,9 @@
   <div id="keyword">
     <ul>
 
-        {% for keyword in adj_top %}
+        {% for adj_keyword in adj_top %}
         <p>
-          <li><a  href="{% url 'top2' hotel_name id forloop.counter0 %}">{{keyword}}</a></li>
+          <li><a  href="{% url 'top_adj' hotel_name id keyowrd forloop.counter0 %}">{{adj_keyword}}</a></li>
         </p>
         {% endfor %}
       

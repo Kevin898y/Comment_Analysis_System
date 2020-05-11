@@ -8,7 +8,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 # import pke
-from nltk.corpus import stopwords
+# from nltk.corpus import stopwords
 import numpy as np
 from catalog.forms import SearchForm
 from catalog.forms import CheckForm
@@ -19,7 +19,7 @@ import json
 
 # ke = Keyword_Extraction('wordtovector/GoogleNews-vectors-negative300.bin','data/keyword.csv','1')
 # ner = Bert_NER('model/NER3/')
-ner = Bert_NER('model/NER4/') 
+ner = Bert_NER('model/NER5/') 
 sen = Review_Sentiment('model/sentiment/')
 filename= '' 
 
@@ -52,9 +52,8 @@ def Search(request):
     }
     return render(request,'home.html', context)
     
-def top1(request,slug, id): #to do
-    temp = id
-    hotel_name = slug
+def top_keyowrd(request,hotel_name, id, keyowrd): #to do
+    hotel_name = hotel_name
     data = pd.read_csv('cache/'+hotel_name+'_to_CoNLL.csv')
     data['adj'] = data['adj'].map(lambda x: eval(x))
     data['sentence'] = data['sentence'].map(lambda x: eval(x))
@@ -62,14 +61,15 @@ def top1(request,slug, id): #to do
 
     Filter_Good = all_sentence['sentiment']==1
     Filter_Bad = all_sentence['sentiment'] == 0
-    good_keyword_top5 = list(np.load('cache/'+hotel_name+"_good_keyword_top5.npy"))
-    bad_keyword_top5 = list(np.load('cache/'+hotel_name+"_bad_keyword_top5.npy"))
 
-    if id >len(good_keyword_top5):
-        id = id-len(good_keyword_top5)-1
-        Filter = all_sentence[Filter_Bad] ['keyword']==bad_keyword_top5[id]
+    with open('cache/top_good.json',encoding = 'utf8') as f:
+        top_good = json.load(f)
+    with open('cache/top_bad.json',encoding = 'utf8') as f:
+        top_bad = json.load(f)
+
+    if id >len(top_good):
+        Filter = all_sentence[Filter_Bad] ['keyword']==keyowrd
         clean_data = all_sentence[Filter_Bad][Filter]
-        print(len(clean_data))
         data = list(zip(clean_data['ground_truth'], [0]*len(clean_data['keyword']),clean_data['sentence'] ))
         all_adj = {}
         for i in clean_data['adj']:
@@ -81,13 +81,12 @@ def top1(request,slug, id): #to do
         adjtop = sorted(all_adj.items(), key=lambda d: d[1],reverse=True)
         adj_top = []
         for i in adjtop:
-            if i[1]>len(clean_data['keyword'])/12 and i[1]>=3:
+            if i[1]>len(clean_data['keyword'])/12 and i[1]>=3:####
                 adj_top.append(i[0])
         adjtop = adj_top
         
-
     else :
-        Filter = all_sentence[Filter_Good] ['keyword']==good_keyword_top5[id]
+        Filter = all_sentence[Filter_Good] ['keyword']==keyowrd
         clean_data = all_sentence[Filter_Good][Filter]
         data = list(zip(clean_data['ground_truth'], [1]*len(clean_data['keyword']),clean_data['sentence'] ))
         all_adj = {}
@@ -100,28 +99,27 @@ def top1(request,slug, id): #to do
         adjtop = sorted(all_adj.items(), key=lambda d: d[1],reverse=True)
         adj_top = []
         for i in adjtop:
-            if i[1]>len(clean_data['keyword'])/12 and i[1]>=3:
+            if i[1]>len(clean_data['keyword'])/12 and i[1]>=3:###
                 adj_top.append(i[0])
         adjtop = adj_top
-        
-          
     
     context = {
-        'good_keyword_top5': good_keyword_top5,
-        'bad_keyword_top5': bad_keyword_top5,
-        'good_keyword_size':len(good_keyword_top5),
-        'bad_keyword_size': len(bad_keyword_top5),
+        'top_good': top_good,
+        'top_bad': top_bad,
+        'good_keyword_size':len(top_good),
+        'bad_keyword_size': len(top_bad)+1,
         'adj_top':adjtop,
         'data':data,
-        'id':temp,
-        'hotel_name':slug,
-    }
+        'id':id,
+        'hotel_name':hotel_name,
+        'keyowrd':keyowrd,
+    } 
 
     return render(request,'NER.html',context)
 
-def top2(request, slug,id, adj_num): #to do
+def top_adj(request,hotel_name,id,keyowrd,adj_num ): #to do
     temp = id
-    hotel_name = slug
+    hotel_name = hotel_name
     data = pd.read_csv('cache/'+hotel_name+'_to_CoNLL.csv')
     data['adj'] = data['adj'].map(lambda x: eval(x))
     data['sentence'] = data['sentence'].map(lambda x: eval(x))
@@ -130,13 +128,12 @@ def top2(request, slug,id, adj_num): #to do
 
     Filter_Good = all_sentence['sentiment']==1
     Filter_Bad = all_sentence['sentiment'] == 0
-    good_keyword_top5 = list(np.load('cache/'+hotel_name+"_good_keyword_top5.npy"))
-    bad_keyword_top5 = list(np.load('cache/'+hotel_name+"_bad_keyword_top5.npy"))
-
-    if id >len(good_keyword_top5):
-        id = id-len(good_keyword_top5)-1
-
-        Filter = all_sentence[Filter_Bad]  ['keyword']==bad_keyword_top5[id]
+    with open('cache/top_good.json',encoding = 'utf8') as f:
+        top_good = json.load(f)
+    with open('cache/top_bad.json',encoding = 'utf8') as f:
+        top_bad = json.load(f)
+    if id >len(top_good):
+        Filter = all_sentence[Filter_Bad] ['keyword']==keyowrd
         clean_data = all_sentence[Filter_Bad] [Filter]
         all_adj = {}
         for i in clean_data['adj']:
@@ -157,7 +154,7 @@ def top2(request, slug,id, adj_num): #to do
                 data.append((ground_truth,keyword,sentence))
 
     else :
-        Filter = all_sentence[Filter_Good]['keyword']==good_keyword_top5[id]
+        Filter = all_sentence[Filter_Good]['keyword']==keyowrd
         clean_data = all_sentence[Filter_Good][Filter]
         all_adj = {}
         for i in clean_data['adj']:
@@ -180,17 +177,18 @@ def top2(request, slug,id, adj_num): #to do
          
     adjtop = adj_top
     context = {
-        'good_keyword_top5': good_keyword_top5,
-        'bad_keyword_top5': bad_keyword_top5,
-        'good_keyword_size':len(good_keyword_top5),
-        'bad_keyword_size': len(bad_keyword_top5),
+        'top_good': top_good,
+        'top_bad': top_bad,
+        'good_keyword_size':len(top_good),
+        'bad_keyword_size': len(top_bad)+1,
         'adj_top':adjtop,
         'data':data,
         'id':temp,
-        'hotel_name':slug,
+        'hotel_name':hotel_name,
+        'keyowrd':keyowrd,
     }
-
     return render(request,'NER.html',context)
+
 def sidebar(request, slug,id): #to do
     temp = id
     hotel_name = slug
@@ -200,29 +198,33 @@ def sidebar(request, slug,id): #to do
     data['sentence'] = data['sentence'].map(lambda x: eval(x))
     all_sentence = data
     Filter_duplicated = ~all_sentence['uid'].duplicated() 
-    good_keyword_top5 = list(np.load('cache/'+hotel_name+"_good_keyword_top5.npy"))
-    bad_keyword_top5 = list(np.load('cache/'+hotel_name+"_bad_keyword_top5.npy"))
+
+    with open('cache/top_good.json',encoding = 'utf8') as f:
+        top_good = json.load(f)
+    with open('cache/top_bad.json',encoding = 'utf8') as f:
+        top_bad = json.load(f)
 
     if id == 0: #disadvantage
-        temp = len(good_keyword_top5)+len(bad_keyword_top5)+1
+        temp = len(top_good)+len(top_bad)+1
         Filter2 = all_sentence['sentiment']== 0
         data = list(zip(all_sentence[Filter_duplicated & Filter2]['ground_truth'].to_list(),all_sentence[Filter_duplicated & Filter2]['sentiment'].tolist(),all_sentence[Filter_duplicated & Filter2]['sentence'].tolist()))  
 
     elif id == 1: #advantage
-        temp =  len(good_keyword_top5)
+        temp =  len(top_good)
         Filter2 = all_sentence['sentiment']== 1
         data = list(zip(all_sentence[Filter_duplicated & Filter2]['ground_truth'].to_list(),all_sentence[Filter_duplicated & Filter2]['sentiment'].tolist(),all_sentence[Filter_duplicated & Filter2]['sentence'].tolist()))
 
     else: #all
-        temp = len(good_keyword_top5)+len(bad_keyword_top5)+2
+        temp = len(top_good)+len(top_bad)+2
         data = list(zip(all_sentence[Filter_duplicated]['ground_truth'].to_list(),all_sentence[Filter_duplicated]['sentiment'].tolist(),all_sentence[Filter_duplicated]['sentence'].tolist()))
-        
+
+    
         
     context = {
-        'good_keyword_top5': good_keyword_top5,
-        'bad_keyword_top5': bad_keyword_top5,
-        'good_keyword_size':len(good_keyword_top5),
-        'bad_keyword_size': len(bad_keyword_top5)+1,
+        'top_good': top_good,
+        'top_bad': top_bad,
+        'good_keyword_size':len(top_good),
+        'bad_keyword_size': len(top_bad)+1,
         'data':data,
         'id':temp,
         'hotel_name':slug,
@@ -328,38 +330,11 @@ def Ner(request,slug):
     Filter = ~all_sentence['uid'].duplicated() ##UID
     data = list(zip(all_sentence[Filter]['ground_truth'].to_list(),all_sentence[Filter]['sentiment'].tolist(),all_sentence[Filter]['sentence'].tolist()))
     
-    good_keyword_top5 = list(np.load('cache/'+hotel_name+"_good_keyword_top5.npy"))
-    #%%
-    # with open('data/merge.json','r',encoding = 'utf8') as f:
-    #     keyword_tree = json.load(f)
-    # good_top = {}
-    # for keyword in good_keyword_top5:
-    #     Find = False
-    #     if keyword in keyword_tree:
-    #         Find = True
-    #         good_top[good_top[i]] = []
-    #     else:
-    #         for key,values in tree.items():
-    #             if keyword in values:
-    #                 Find = True
-    #                 try:
-    #                     good_top[key].append(keyword)
-    #                 except:
-    #                     good_top[key] = []
-    #                     good_top[key].append(keyword)
-    #     if not Find:
-    #         good_top[keyword] = []
-    #%%
 
-
-
-
-    bad_keyword_top5 = list(np.load('cache/'+hotel_name+"_bad_keyword_top5.npy"))
     context = {
-        'good_keyword_top5': good_top,
-        'bad_keyword_top5': bad_keyword_top5,
+
         'hotel_name':hotel_name,
-        # 'adj_top5':ner.adj_top5,
+
         'data':data,
     }
     return render(request,'NER.html',context= context)

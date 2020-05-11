@@ -188,7 +188,26 @@ a:hover {
 	color: #3B3B3B;
 	border: none;
 }
+#keyword details {
+  
+    padding: auto;
+}
 
+#keyword summary {
+	text-transform: uppercase;
+	font-family: 'Times','Microsoft JhengHei', serif;
+	font-weight: bold;
+	font-size: 14px;
+    margin: -.5em -.5em 0;
+	padding: .6em;
+	color: #0193CC;
+}
+#keyword a.summary  {
+	color: #0193CC;
+	font-weight: bold;
+	font-family: 'Times','Microsoft JhengHei', serif;
+	font-size: 14px;
+}
 #keyword a:hover, #keyword .current_page_item a {
 	background: #0193CC;
 	text-decoration: none;
@@ -213,9 +232,9 @@ a:hover {
 	color: #0193CC;
 }
 #keyword a.advantage  {
-	
-	color: #0193CC;
+	color: rgb(20, 20, 20);
 }
+
 #keyword a.disadvantage:hover {
 	background: rgb(255, 158, 158);
 	text-decoration: none;
@@ -373,7 +392,7 @@ a:hover {
 
 #sidebar li ul {
 	margin: 0px 0px;
-	padding-bottom: 50px;
+	padding-bottom: 5px;
 }
 
 #sidebar li li {
@@ -386,6 +405,15 @@ a:hover {
 #sidebar li li a {
 	color: #3B3B3B;
 }
+#sidebar a:hover, #sidebar .current_page_item a {
+	background: #0193CC;
+	text-decoration: none;
+	color: #FFFFFF;
+}
+
+#sidebar .current_page_item a {
+	background: #0193CC;
+}
 
 #sidebar li li span {
 	display: block;
@@ -395,9 +423,11 @@ a:hover {
 }
 
 #sidebar h2 {
-	padding-bottom: 20px;
-	font-size: 1.8em;
+	padding-bottom: 0px;
+	font-size: 14px;
+	letter-spacing: 1px;
 	color: #0285CE;
+	font-family: 'Arvo', serif;
 }
 
 #sidebar p {

@@ -22,7 +22,7 @@ class Keyword_Merge:
                 try:
                     sim = self.model.similarity(s1,s2)
                     sim2 = self.original_model.similarity(s1,s2)
-                    if(sim >= 0.45 or sim2 >=0.45):
+                    if(sim >= 0.45 or sim2 >=0.5):
                         keyword[s1].append(s2)
                         all_keyword[j]=""
                 except:
@@ -68,7 +68,7 @@ class Keyword_Merge:
                 try:
                     sim = self.model.similarity(s1,s2)
                     sim2 = self.original_model.similarity(s1,s2)
-                    if(sim >= 0.45 or sim2 >=0.45):
+                    if(sim >= 0.45 or sim2 >=0.5):
                         adj[s1].append(s2)
                         all_adj[j]=""
                 except:
