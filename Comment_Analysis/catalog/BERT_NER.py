@@ -148,7 +148,7 @@ class Bert_NER:
             data['adj'] = data['adj'].map(lambda x: eval(x))
             data['sentence'] = data['sentence'].map(lambda x: eval(x))
         else:
-            #輸出文字是處理過的，可用self.training_data['sentence']取代
+            #TODO:輸出文字是處理過的，可用self.training_data['sentence']取代
             uid = 0
             for sentence_pred,size,raw_data,sentiment,truth in zip(pred, self.size, self.inputs,self.training_data['label'],review['label']):
                 
@@ -204,12 +204,12 @@ class Bert_NER:
 
         keyword_clustering.data = good_sentence
         top_good = keyword_clustering.clustering()
-        with open('cache/top_good.json', 'w') as f:
+        with open('cache/'+hotel_name+'top_good.json', 'w') as f:
             json.dump(top_good, f)
 
         keyword_clustering.data = bad_sentence
         top_bad = keyword_clustering.clustering()
-        with open('cache/top_bad.json', 'w') as f:
+        with open('cache/'+hotel_name+'top_bad.json', 'w') as f:
             json.dump(top_bad, f)
 
 

@@ -20,13 +20,15 @@ class Booking_crawler:
         
     def find_max_page(self):
         link = self.soup.findAll('div',class_='bui-pagination__item')
-        page = link[-2].get_text()
-        page = re.sub('\r|\n', '', page)
-        self.page_number = int(page[-2:])  
+        # page = link[-2].get_text()
+        # page = re.sub('\r|\n', '', page)
+        # self.page_number = int(page[-2:])
+        self.page_number = int(link[-2].find('span').get_text())
     
     def load_soup_online(self):
         headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'}
         req = requests.get(self.url,headers=headers,verify=False)
+        # req = requests.get(self.url,headers=headers)
         data = req.text
         req.close()
         self.soup = BeautifulSoup(data, 'html.parser')
@@ -41,7 +43,8 @@ class Booking_crawler:
         country_end = self.url[area_start+area_end+country_start:].find('.')
         country = self.url[area_start+area_end+country_start: area_start+area_end+country_start+country_end]
         
-        
+        # country = ''
+
         urlbase1 = 'https://www.booking.com/reviewlist.'+country+'.html?'
         if len(country)==0:
             urlbase1 = 'https://www.booking.com/reviewlist.html?'
@@ -87,16 +90,19 @@ class Booking_crawler:
         return Clauses
     def ToCSV(self):
         review = pd.read_csv('cache/'+self.pagename+'_review.csv')
-        raw_data= {'label':[],'comm':[]}
+        raw_data= {'label':[],'comm':[], 'original_comm':[]}
         for label,comm in zip(review['label'],review['comm'] ) :
-            label = int(label)
-            comm = self.splitSentence(str(comm))
-            for j in comm:
-                if j != 'Nothing' and j!='N/a' and j != 'N/A' and j!= 'n/a' and j != 'n/A' and j!='nan' and len(j)>0:
-                    # j = self.remove_emoji(str(j))
-                    raw_data['label'].append(label)
-                    raw_data['comm'].append(str(j))
-        df = pd.DataFrame(raw_data, columns = ['label','comm'])
+            comm = str(comm)
+            if comm != 'Nothing' and comm!='N/a' and comm != 'N/A' and comm!= 'n/a' and comm != 'n/A' and comm!='nan' and len(comm)>0:
+                label = int(label)
+                split_comm = self.splitSentence(str(comm))
+                for j in split_comm:
+                    if j != 'Nothing' and j!='N/a' and j != 'N/A' and j!= 'n/a' and j != 'n/A' and j!='nan' and len(j)>0:
+                        # j = self.remove_emoji(str(j))
+                        raw_data['label'].append(label)
+                        raw_data['comm'].append(str(j))
+                        raw_data['original_comm'].append(comm)
+        df = pd.DataFrame(raw_data, columns = ['label','comm','original_comm'])
         df.to_csv('cache/'+self.pagename+'_review.csv',index = False)
         # 分割句子
         split = Bert_Split('model/DeepSegment/','cache/'+self.pagename+'_review.csv')
@@ -113,11 +119,6 @@ class Booking_crawler:
         self.Find_Review_Url()
         if os.path.isfile('cache/'+self.pagename+'.csv'):
             return True
-
-        # print(self.url)
-        # pattern_start = self.url.find('offset')
-        # pattern_end = self.url[pattern_start:].find(';')
-        # url_pattern = self.url[pattern_start+7 :pattern_start+pattern_end]
 
         self.load_soup_online()
         try:

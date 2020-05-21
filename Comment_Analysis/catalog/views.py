@@ -62,9 +62,9 @@ def top_keyowrd(request,hotel_name, id, keyowrd): #to do
     Filter_Good = all_sentence['sentiment']==1
     Filter_Bad = all_sentence['sentiment'] == 0
 
-    with open('cache/top_good.json',encoding = 'utf8') as f:
+    with open('cache/'+hotel_name+'top_good.json',encoding = 'utf8') as f:
         top_good = json.load(f)
-    with open('cache/top_bad.json',encoding = 'utf8') as f:
+    with open('cache/'+hotel_name+'top_bad.json',encoding = 'utf8') as f:
         top_bad = json.load(f)
 
     if id >len(top_good):
@@ -128,9 +128,9 @@ def top_adj(request,hotel_name,id,keyowrd,adj_num ): #to do
 
     Filter_Good = all_sentence['sentiment']==1
     Filter_Bad = all_sentence['sentiment'] == 0
-    with open('cache/top_good.json',encoding = 'utf8') as f:
+    with open('cache/'+hotel_name+'top_good.json',encoding = 'utf8') as f:
         top_good = json.load(f)
-    with open('cache/top_bad.json',encoding = 'utf8') as f:
+    with open('cache/'+hotel_name+'top_bad.json',encoding = 'utf8') as f:
         top_bad = json.load(f)
     if id >len(top_good):
         Filter = all_sentence[Filter_Bad] ['keyword']==keyowrd
@@ -199,9 +199,9 @@ def sidebar(request, slug,id): #to do
     all_sentence = data
     Filter_duplicated = ~all_sentence['uid'].duplicated() 
 
-    with open('cache/top_good.json',encoding = 'utf8') as f:
+    with open('cache/'+hotel_name+'top_good.json',encoding = 'utf8') as f:
         top_good = json.load(f)
-    with open('cache/top_bad.json',encoding = 'utf8') as f:
+    with open('cache/'+hotel_name+'top_bad.json',encoding = 'utf8') as f:
         top_bad = json.load(f)
 
     if id == 0: #disadvantage
@@ -217,8 +217,6 @@ def sidebar(request, slug,id): #to do
     else: #all
         temp = len(top_good)+len(top_bad)+2
         data = list(zip(all_sentence[Filter_duplicated]['ground_truth'].to_list(),all_sentence[Filter_duplicated]['sentiment'].tolist(),all_sentence[Filter_duplicated]['sentence'].tolist()))
-
-    
         
     context = {
         'top_good': top_good,
@@ -311,8 +309,8 @@ def sentiment(request):
 
 def Ner(request,slug):
     hotel_name = slug
-    
     data =0
+
     if not os.path.isfile('cache/'+hotel_name+'_to_CoNLL.csv'):
         review = pd.read_csv('cache/'+hotel_name+'.csv', dtype={'comm': str})
         pred = sen.prediction(review)
@@ -321,20 +319,16 @@ def Ner(request,slug):
         pred = ner.prediction(hotel_name)
         ner.to_CoNLL(pred,hotel_name)
 
-        
-  
     data = pd.read_csv('cache/'+hotel_name+'_to_CoNLL.csv')
     data['adj'] = data['adj'].map(lambda x: eval(x))
     data['sentence'] = data['sentence'].map(lambda x: eval(x))
     all_sentence = data
     Filter = ~all_sentence['uid'].duplicated() ##UID
+    
     data = list(zip(all_sentence[Filter]['ground_truth'].to_list(),all_sentence[Filter]['sentiment'].tolist(),all_sentence[Filter]['sentence'].tolist()))
     
-
     context = {
-
         'hotel_name':hotel_name,
-
         'data':data,
     }
     return render(request,'NER.html',context= context)

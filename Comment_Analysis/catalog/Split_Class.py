@@ -19,13 +19,16 @@ class Bert_Split:
         self.model = BertForTokenClassification.from_pretrained(model_path)
         self.data = pd.read_csv(data_path)
         self.size = []
+        self.original_comm = []
     def to_ids(self,):
         inputs = [] 
         masks = []
-        for sentence in self.data['comm']:
+        self.original_comm = []
+        for sentence,original in zip(self.data['comm'],self.data['original_comm']):
             if (sentence == sentence):
                 data = self.tokenizer.encode(sentence, add_special_tokens=True)
                 if len(data) < self.MAX_LEN:
+                    self.original_comm.append(original)
                     self.size.append(len(data))
                     data = pad_sequences([data], maxlen=self.MAX_LEN, dtype="long", truncating="post", padding="post")
                     attention_masks = [[float(i>0) for i in ii] for ii in data]
@@ -71,8 +74,8 @@ class Bert_Split:
 
         return all_sen
     def split_sentence(self, all_sentence,all_pred,all_label):
-        data = {'label':[],'comm':[]}
-        for sentence,pred,sen_label in zip(all_sentence,all_pred,all_label):
+        data = {'comm':[],'label':[],'original_comm':[]}
+        for sentence,pred,sen_label,original in zip(all_sentence,all_pred,all_label,self.original_comm):
             split_sen = []
             sen = []
             index = 0
@@ -88,28 +91,27 @@ class Bert_Split:
             for i in self.convert_to_original(split_sen):
                 data['comm'].append(i)
                 data['label'].append(sen_label)
+                data['original_comm'].append(original)
         return data
     def to_csv(self,pred):
         output = {'label':[],'comm':[]}
         id2tags = {0:'B-sent', 1:'O'}
-        for sentence,size,raw_data in zip(pred,self.size, self.inputs):
+        for sent_label,size,raw_data in zip(pred,self.size, self.inputs):
             label = []
             token = []
             for index in range(size-2):
-                label.append(id2tags.get(int(sentence[index+1]) ))
+                label.append(id2tags.get(int(sent_label[index+1]) ))
                 token.append(raw_data[index+1])
                 
             output['comm'].append(self.tokenizer.convert_ids_to_tokens(token)) 
             output['label'].append(label)
             
-        df = pd.DataFrame(output, columns = ['comm','label'])
+        # df = pd.DataFrame(output, columns = ['comm','label'])
         data = self.split_sentence(output['comm'],output['label'],self.data['label'])
         data = pd.DataFrame(data,columns = ['label','comm'])
         #         df.to_csv('BERT_output.csv',index = False)
 
         return data
- 
-
 
 # In[7]:
 
