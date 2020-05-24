@@ -93,7 +93,7 @@ class Bert_Split:
                 data['label'].append(sen_label)
                 data['original_comm'].append(original)
         return data
-    def to_csv(self,pred):
+    def to_csv(self,pred):#TODO:
         output = {'label':[],'comm':[]}
         id2tags = {0:'B-sent', 1:'O'}
         for sent_label,size,raw_data in zip(pred,self.size, self.inputs):
@@ -108,7 +108,7 @@ class Bert_Split:
             
         # df = pd.DataFrame(output, columns = ['comm','label'])
         data = self.split_sentence(output['comm'],output['label'],self.data['label'])
-        data = pd.DataFrame(data,columns = ['label','comm'])
+        data = pd.DataFrame(data,columns = ['label','comm','original_comm'])
         #         df.to_csv('BERT_output.csv',index = False)
 
         return data

@@ -61,7 +61,7 @@ class Review_Sentiment:
     def to_csv(self,pred,hotel_name):
         raw_data= {'label':[],'comm':[]}
         for label,comm in zip(pred,self.ground_truth['comm']):
-            raw_data['label'].append( int(label>0.5) )
+            raw_data['label'].append( label )
             raw_data['comm'].append(comm)
 
         df = pd.DataFrame(raw_data, columns = ['label','comm'])
@@ -71,7 +71,7 @@ class Review_Sentiment:
         df = pd.DataFrame(self.ground_truth, columns = ['label','comm'])
         df.to_csv('cache/'+hotel_name+'ground_truth.csv',index = False)
 
-        return raw_data
+        return df
 
 
 

@@ -35,20 +35,24 @@ class Bert_NER:
         self.model = BertForTokenClassification.from_pretrained(model_path)
         self.data=''
         self.size = []#
-        self.training_data = {'label':[],'sentence':[]}#
+        self.training_data = {'label':[],'sentence':[],'original':[],'truth_label':[]}#
         self.inputs = ''#
     def to_ids(self,):
         inputs = []
         masks = []
         self.training_data['label'].clear()
         self.training_data['sentence'].clear()
+        self.training_data['original'].clear()
+        self.training_data['truth_label'].clear()
         self.size.clear()
-        for label,sentence in zip(self.data['label'],self.data['comm']):
+        for label,sentence,original,truth_label in zip(self.data['label'],self.data['comm'],self.data['original'],self.data['ground_truth']):
             if (sentence == sentence):#pd.dropna() 
                 data = self.tokenizer.encode(sentence, add_special_tokens=True)
                 if len(data) <= self.MAX_LEN:
                     self.training_data['label'].append(label)
                     self.training_data['sentence'].append(sentence)
+                    self.training_data['original'].append(original)
+                    self.training_data['truth_label'].append(truth_label)
                 
                     self.size.append(len(data))
                     data = pad_sequences([data], maxlen=self.MAX_LEN, dtype="long", truncating="post", padding="post")
@@ -57,7 +61,7 @@ class Bert_NER:
                     masks.append(attention_masks)
         self.inputs= np.array(inputs).reshape(len(inputs),self.MAX_LEN)
         self.masks = np.array(masks).reshape(len(inputs),self.MAX_LEN)
-    def prediction(self,hotel_name,batch_size=300):
+    def prediction(self,batch_size=300):
         self.to_ids()
         self.model.cuda()
         self.model.eval()
@@ -79,15 +83,6 @@ class Bert_NER:
                 prediction = torch.max(F.softmax(outputs[0],dim=2), 2)[1]
                 prediction = prediction.cpu()
                 pred.extend(prediction.numpy().tolist())
-
-        ## for cache
-        # temp = np.array(pred)
-        # np.save('cache/'+hotel_name+"_pred.npy", temp)
-        # temp = np.array(self.size)
-        # np.save(hotel_name+"_size.npy", temp)
-        # np.save(hotel_name+"_inputs.npy", self.inputs)
-        # with open(hotel_name+'training_data.json', 'w') as f:
-        #     json.dump(self.training_data, f)
 
 
         return pred
@@ -141,8 +136,7 @@ class Bert_NER:
     def to_CoNLL(self,pred,hotel_name):
         id2tags = {0:'B-KEY', 1:'B-ADJ', 2:'O'}
         sentence_label = []
-        review = pd.read_csv('cache/'+hotel_name+'ground_truth.csv', dtype={'comm': str})
-        data = {'uid':[],'keyword':[],'adj':[],'sentiment':[],'sentence':[],'ground_truth':[]}
+        data = {'uid':[],'keyword':[],'adj':[],'sentiment':[],'sentence':[],'ground_truth':[],'original':[]}
         if os.path.isfile('cache/'+hotel_name+'_to_CoNLL.csv'):
             data = pd.read_csv('cache/'+hotel_name+'_to_CoNLL.csv')
             data['adj'] = data['adj'].map(lambda x: eval(x))
@@ -150,7 +144,8 @@ class Bert_NER:
         else:
             #TODO:輸出文字是處理過的，可用self.training_data['sentence']取代
             uid = 0
-            for sentence_pred,size,raw_data,sentiment,truth in zip(pred, self.size, self.inputs,self.training_data['label'],review['label']):
+            for sentence_pred,size,raw_data,sentiment,truth,original in zip(pred, self.size, self.inputs,self.training_data['label']\
+                ,self.training_data['truth_label'],self.training_data['original']):
                 
                 token_list = []
                 comm_label = []#sentence_label
@@ -179,6 +174,7 @@ class Bert_NER:
                     data['sentiment'].append(sentiment)
                     data['sentence'].append(tuple(token_list))
                     data['ground_truth'].append(truth)
+                    data['original'].append(original)
                 if len(comm_label) == 0:
                     data['uid'].append(uid)
                     data['keyword'].append('')
@@ -186,9 +182,10 @@ class Bert_NER:
                     data['sentiment'].append(sentiment)
                     data['sentence'].append(tuple(token_list))
                     data['ground_truth'].append(truth)
+                    data['original'].append(original)
                 uid+=1
                 
-            data = pd.DataFrame(data, columns = ['uid','keyword','adj','sentiment','sentence','ground_truth'])
+            data = pd.DataFrame(data, columns = ['uid','keyword','adj','sentiment','sentence','ground_truth','original'])
             keyword_sorted = list(data.keyword.value_counts().index)
             sentence_label = keyword_merge.merge(keyword_sorted, data['keyword'])
             data['keyword'] = sentence_label
@@ -211,27 +208,4 @@ class Bert_NER:
         top_bad = keyword_clustering.clustering()
         with open('cache/'+hotel_name+'top_bad.json', 'w') as f:
             json.dump(top_bad, f)
-
-
-        # self.good_keyword_top5 = list(data[Filter_Good].keyword.value_counts().index)
-        # self.bad_keyword_top5 = list(data[Filter_Bad].keyword.value_counts().index)
-        # good_keyword_top5 = []
-        # for i in self.good_keyword_top5:
-        #     if i !='':
-        #         Filter = self.good_sentence ['keyword']==i
-        #         clean_data = self.good_sentence[Filter]
-        #         if len(clean_data)>10 or len(clean_data)>=len(self.good_keyword_top5)/10:
-        #             good_keyword_top5.append(i)
-        # temp = np.array(good_keyword_top5)
-        # np.save('cache/'+hotel_name+"_good_keyword_top5.npy", temp)       
-
-        # bad_keyword_top5 = []
-        # for i in self.bad_keyword_top5:
-        #     if i != '':
-        #         Filter = self.bad_sentence ['keyword']==i
-        #         clean_data = self.bad_sentence[Filter]
-        #         if len(clean_data)>10 or len(clean_data)>len(self.bad_keyword_top5)/10:
-        #             bad_keyword_top5.append(i)
-        # temp = np.array(bad_keyword_top5)
-        # np.save('cache/'+hotel_name+"_bad_keyword_top5.npy", temp)       
 

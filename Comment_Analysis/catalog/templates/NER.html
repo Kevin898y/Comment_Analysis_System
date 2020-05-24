@@ -125,26 +125,30 @@
     <meta charset="utf-8" />
     <title>Client Side jQuery DataTables</title>
     <!--引用css-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.1/semantic.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/dataTables.semanticui.min.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.4/css/responsive.semanticui.min.css" />
   </head>
 
   <body>
-    <table id="myDataTalbe"  class="display"  >
+    <table id="NER" class="ui celled table nowrap dataTable no-footer dtr-inline collapsed" style="width: 100%;" role="grid" aria-describedby="example_info"  >
         <thead>
 
-            <tr>
-                <th>Comment</th>
+            <tr role="row">
+                <th style='text-align:center;vertical-align:middle' aria-controls="NER">Comment</th>
+                <th  class = 'none' aria-controls="NER"   >original comment</th>
             </tr>
         </thead>
         <tbody>
 
-          {% for ground_truth,sen_label,comm in data %}
+          {% for ground_truth,sen_label,comm,original in data %}
           <tr >  
               {% if sen_label == 0 %}
                 {% if sen_label == ground_truth %}
-                  <td style="background-color:rgb(255, 158, 158);" align="center"> 
+                  <td class="dtr-control sorting_1" style="background-color:rgb(255, 158, 158);text-align:center;vertical-align:middle" > 
                 {% else %}
-                  <td style="background-color:rgb(15, 255, 7);" align="center"> 
+                  <td class="dtr-control sorting_1" style="background-color:rgb(15, 255, 7);text-align:center;vertical-align:middle" > 
                     <span style="font-weight:bold;">
                       truth: {{ground_truth}}&nbsp;&nbsp;pred: {{sen_label}}&nbsp;&nbsp;
                     </span>
@@ -162,9 +166,9 @@
                   </td>
               {% elif sen_label == 1 %}
                 {% if sen_label == ground_truth %}
-                  <td style="background-color:rgb(158, 228, 255);" align="center">
+                  <td class="dtr-control sorting_1" style="background-color:rgb(158, 228, 255);text-align:center;vertical-align:middle" >
                 {% else %}
-                  <td style="background-color:rgb(15, 255, 7);" align="center">
+                  <td class="dtr-control sorting_1" style="background-color:rgb(15, 255, 7);text-align:center;vertical-align:middle" >
                     <span style="font-weight:bold;">
                       truth: {{ground_truth}}&nbsp;&nbsp;pred: {{sen_label}}&nbsp;&nbsp;
                     </span> 
@@ -178,35 +182,43 @@
                       {{token}}
                     {% endif %}
                 {% endfor %}
-              
                   </td>
               {% endif %}
+
+              <td style="text-align:center;vertical-align:middle;display: none;">{{original}}</td>
           </tr>
           {% endfor %}
        
         </tbody>
     </table>
     <!--引用jQuery-->
-    <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.js"></script>
     <!--引用dataTables.js-->
-    <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.1/semantic.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/dataTables.semanticui.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.4/js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.4/js/responsive.semanticui.min.js"></script>
     
     <script type="text/javascript">
         $(function () {
 
-            $("#myDataTalbe").DataTable({
+            $("#NER").DataTable({
                 'ordering':false,
                 searching: true, //關閉filter功能
-                columnDefs: [{
-                  // targets: [0],
-                  // orderable: false,
-                  "targets": 0,
-                  "createdCell": function (td, cellData, rowData, row, col) {
-                    if ( cellData < 1 ) {
-                      $(td).css('color', 'red')
-                    }
+                responsive: {
+                  details: {
+                    display: $.fn.dataTable.Responsive.display.modal( {
+                      header: function ( row ) {
+                        var data = row.data();
+                        return 'Details for ';
+                      }
+                    } ),
+                    renderer: $.fn.dataTable.Responsive.renderer.tableAll( {
+                      tableClass: 'ui table'
+                    } )
                   }
-                }]
+                }
             });
         });
     </script>
