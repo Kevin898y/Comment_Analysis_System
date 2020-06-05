@@ -57,13 +57,20 @@ def top_keyowrd(request,hotel_name, id, keyowrd): #to do
     data = pd.read_csv('cache/'+hotel_name+'_to_CoNLL.csv')
     data['adj'] = data['adj'].map(lambda x: eval(x))
     data['sentence'] = data['sentence'].map(lambda x: eval(x))
-    all_sentence = data
 
+    Filter = ~data['uid'].duplicated() ##UID
+    sentence = data[Filter]
+
+    all_sentence = data
     Filter_Good = all_sentence['sentiment']==1
     Filter_Bad = all_sentence['sentiment'] == 0
 
+    good_num = np.load('cache/'+hotel_name+'good_num.npy',allow_pickle = True)
+    good_center = np.load('cache/'+hotel_name+'good_center.npy',allow_pickle = True)
     with open('cache/'+hotel_name+'top_good.json',encoding = 'utf8') as f:
         top_good = json.load(f)
+    bad_num = np.load('cache/'+hotel_name+'bad_num.npy',allow_pickle = True)
+    bad_center = np.load('cache/'+hotel_name+'bad_center.npy',allow_pickle = True)
     with open('cache/'+hotel_name+'top_bad.json',encoding = 'utf8') as f:
         top_bad = json.load(f)
 
@@ -104,8 +111,15 @@ def top_keyowrd(request,hotel_name, id, keyowrd): #to do
         adjtop = adj_top
     
     context = {
+        'all_num':len(sentence),
+        'advantage_num':len(sentence[sentence['sentiment']== 1]),
+        'disadvantage_num':len(sentence[sentence['sentiment']== 0]),
         'top_good': top_good,
         'top_bad': top_bad,
+        'good_num':good_num,
+        'good_center':good_center,
+        'bad_num':bad_num,
+        'bad_center':bad_center,
         'good_keyword_size':len(top_good),
         'bad_keyword_size': len(top_bad)+1,
         'adj_top':adjtop,
@@ -124,14 +138,22 @@ def top_adj(request,hotel_name,id,keyowrd,adj_num ): #to do
     data['adj'] = data['adj'].map(lambda x: eval(x))
     data['sentence'] = data['sentence'].map(lambda x: eval(x))
     
+    Filter = ~data['uid'].duplicated() ##UID
+    sentence = data[Filter]
+    
     all_sentence = data
-
     Filter_Good = all_sentence['sentiment']==1
     Filter_Bad = all_sentence['sentiment'] == 0
+
+    good_num = np.load('cache/'+hotel_name+'good_num.npy',allow_pickle = True)
+    good_center = np.load('cache/'+hotel_name+'good_center.npy',allow_pickle = True)
     with open('cache/'+hotel_name+'top_good.json',encoding = 'utf8') as f:
         top_good = json.load(f)
+    bad_num = np.load('cache/'+hotel_name+'bad_num.npy',allow_pickle = True)
+    bad_center = np.load('cache/'+hotel_name+'bad_center.npy',allow_pickle = True)
     with open('cache/'+hotel_name+'top_bad.json',encoding = 'utf8') as f:
         top_bad = json.load(f)
+
     if id >len(top_good):
         Filter = all_sentence[Filter_Bad] ['keyword']==keyowrd
         clean_data = all_sentence[Filter_Bad] [Filter]
@@ -174,10 +196,18 @@ def top_adj(request,hotel_name,id,keyowrd,adj_num ): #to do
         for ground_truth,keyword,sentence,adj,original in zip(clean_data['ground_truth'], [1]*len(clean_data['keyword']),clean_data['sentence'],clean_data['adj'],clean_data['original'] ):
             if adj_top[adj_num] in adj:
                 data.append((ground_truth,keyword,sentence,original))
-         
+
+    
     context = {
+        'all_num':len(sentence),
+        'advantage_num':len(sentence[sentence['sentiment']== 1]),
+        'disadvantage_num':len(sentence[sentence['sentiment']== 0]),
         'top_good': top_good,
         'top_bad': top_bad,
+        'good_num':good_num,
+        'good_center':good_center,
+        'bad_num':bad_num,
+        'bad_center':bad_center,
         'good_keyword_size':len(top_good),
         'bad_keyword_size': len(top_bad)+1,
         'adj_top':adj_top,
@@ -195,34 +225,45 @@ def sidebar(request, slug,id): #to do
     data = pd.read_csv('cache/'+hotel_name+'_to_CoNLL.csv')
     data['adj'] = data['adj'].map(lambda x: eval(x))
     data['sentence'] = data['sentence'].map(lambda x: eval(x))
-    all_sentence = data
-    Filter_duplicated = ~all_sentence['uid'].duplicated() 
+    Filter = ~data['uid'].duplicated() ##UID
+    all_sentence = data[Filter]
 
+    good_num = np.load('cache/'+hotel_name+'good_num.npy',allow_pickle = True)
+    good_center = np.load('cache/'+hotel_name+'good_center.npy',allow_pickle = True)
     with open('cache/'+hotel_name+'top_good.json',encoding = 'utf8') as f:
         top_good = json.load(f)
+    bad_num = np.load('cache/'+hotel_name+'bad_num.npy',allow_pickle = True)
+    bad_center = np.load('cache/'+hotel_name+'bad_center.npy',allow_pickle = True)
     with open('cache/'+hotel_name+'top_bad.json',encoding = 'utf8') as f:
         top_bad = json.load(f)
 
     if id == 0: #disadvantage
         temp = len(top_good)+len(top_bad)+1
         Filter2 = all_sentence['sentiment']== 0
-        data = list(zip(all_sentence[Filter_duplicated & Filter2]['ground_truth'].to_list(),all_sentence[Filter_duplicated & Filter2]['sentiment'].tolist()\
-            ,all_sentence[Filter_duplicated & Filter2]['sentence'].tolist(),all_sentence[Filter_duplicated & Filter2]['original']))  
+        data = list(zip(all_sentence[Filter2]['ground_truth'].to_list(),all_sentence[Filter2]['sentiment'].tolist()\
+            ,all_sentence[Filter2]['sentence'].tolist(),all_sentence[Filter2]['original']))  
 
     elif id == 1: #advantage
         temp =  len(top_good)
         Filter2 = all_sentence['sentiment']== 1
-        data = list(zip(all_sentence[Filter_duplicated & Filter2]['ground_truth'].to_list(),all_sentence[Filter_duplicated & Filter2]['sentiment'].tolist()\
-            ,all_sentence[Filter_duplicated & Filter2]['sentence'].tolist(),all_sentence[Filter_duplicated & Filter2]['original']))
+        data = list(zip(all_sentence[Filter2]['ground_truth'].to_list(),all_sentence[Filter2]['sentiment'].tolist()\
+            ,all_sentence[Filter2]['sentence'].tolist(),all_sentence[Filter2]['original']))
 
     else: #all
         temp = len(top_good)+len(top_bad)+2
-        data = list(zip(all_sentence[Filter_duplicated]['ground_truth'].to_list(),all_sentence[Filter_duplicated]['sentiment'].tolist()\
-            ,all_sentence[Filter_duplicated]['sentence'].tolist(),all_sentence[Filter_duplicated]['original']))
-        
+        data = list(zip(all_sentence['ground_truth'].to_list(),all_sentence['sentiment'].tolist()\
+            ,all_sentence['sentence'].tolist(),all_sentence['original']))
+
     context = {
+        'all_num':len(all_sentence),
+        'advantage_num':len(all_sentence[all_sentence['sentiment']== 1]),
+        'disadvantage_num':len(all_sentence[all_sentence['sentiment']== 0]),
         'top_good': top_good,
         'top_bad': top_bad,
+        'good_num':good_num,
+        'good_center':good_center,
+        'bad_num':bad_num,
+        'bad_center':bad_center,
         'good_keyword_size':len(top_good),
         'bad_keyword_size': len(top_bad)+1,
         'data':data,
@@ -282,11 +323,6 @@ def Split_Label(request):
     return render(request, 'Split_Label.html', context)
 
 def simple_crawl(request,slug):  #not use
-    # url = 'https://www.booking.com/hotel/gb/italianflat-brompton.en-gb.html?aid=304142;label=gen173nr-1FCAEoggI46AdIM1gEaOcBiAEBmAEwuAEXyAEM2AEB6AEB-AELiAIBqAID;sid=d1c049c0e9123fddfa3b6174f141e95b;dest_id=-2601889;dest_type=city;dist=0;hapos=3;hpos=3;room1=A%2CA;sb_price_type=total;sr_order=popularity;srepoch=1550862196;srpvid=12a885fa98b8042d;type=total;ucfs=1&#hotelTmplhttps://www.booking.com/hotel/gb/italianflat-brompton.en-gb.html?aid=304142;label=gen173nr-1FCAEoggI46AdIM1gEaOcBiAEBmAEwuAEXyAEM2AEB6AEB-AELiAIBqAID;sid=d1c049c0e9123fddfa3b6174f141e95b;dest_id=-2601889;dest_type=city;dist=0;hapos=3;hpos=3;room1=A%2CA;sb_price_type=total;sr_order=popularity;srepoch=1550862196;srpvid=12a885fa98b8042d;type=total;ucfs=1&#hotelTmpl'
-    # url = request
-    # temp = tes
-    # crawler = Booking_crawler(url)
-    # crawler.Scrapy_Review()
     review = pd.read_csv('cache/'+slug+'.csv')
     s = review['comm']
     context = {
@@ -323,18 +359,22 @@ def Ner(request,slug):
         ner.data = ner_data
         pred = ner.prediction()
         ner.to_CoNLL(pred,hotel_name)
+    
 
     data = pd.read_csv('cache/'+hotel_name+'_to_CoNLL.csv')
-    data['adj'] = data['adj'].map(lambda x: eval(x))
+    # data['adj'] = data['adj'].map(lambda x: eval(x))
     data['sentence'] = data['sentence'].map(lambda x: eval(x))
-    all_sentence = data
-    Filter = ~all_sentence['uid'].duplicated() ##UID
+    Filter = ~data['uid'].duplicated() ##UID
+    all_sentence = data[Filter]
     
-    data = list(zip(all_sentence[Filter]['ground_truth'].to_list(),\
-        all_sentence[Filter]['sentiment'].tolist(),all_sentence[Filter]['sentence'].tolist(),all_sentence[Filter]['original']))
+    data = list(zip(all_sentence['ground_truth'].to_list(),\
+        all_sentence['sentiment'].tolist(),all_sentence['sentence'].tolist(),all_sentence['original']))
     
     context = {
         'hotel_name':hotel_name,
+        'all_num':len(all_sentence),
+        'advantage_num':len(all_sentence[all_sentence['sentiment']== 1]),
+        'disadvantage_num':len(all_sentence[all_sentence['sentiment']== 0]),
         'data':data,
     }
     return render(request,'NER.html',context= context)

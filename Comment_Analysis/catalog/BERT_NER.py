@@ -24,7 +24,7 @@ import json
 import pandas as pd
 
 keyword_merge = Keyword_Merge('model/booking_word2vec3.model',"model/GoogleNews-vectors-negative300.bin")
-keyword_clustering = Keyword_Clustering([],'model/merge.json')
+keyword_clustering = Keyword_Clustering([],'model/merge.pickle')
 # sentence_sim = Sentence_Simlarity()
 wordnet.ensure_loaded() 
 # In[1]:
@@ -142,13 +142,12 @@ class Bert_NER:
             data['adj'] = data['adj'].map(lambda x: eval(x))
             data['sentence'] = data['sentence'].map(lambda x: eval(x))
         else:
-            #TODO:輸出文字是處理過的，可用self.training_data['sentence']取代
             uid = 0
             for sentence_pred,size,raw_data,sentiment,truth,original in zip(pred, self.size, self.inputs,self.training_data['label']\
                 ,self.training_data['truth_label'],self.training_data['original']):
                 
                 token_list = []
-                comm_label = []#sentence_label
+                comm_label = []
                 adj_label = []
                 #delete [ClS],[SEP]
                 sentence = raw_data[1:size-1] 
@@ -203,9 +202,31 @@ class Bert_NER:
         top_good = keyword_clustering.clustering()
         with open('cache/'+hotel_name+'top_good.json', 'w') as f:
             json.dump(top_good, f)
+        count_dict = good_sentence.keyword.value_counts()
+        good_num = []
+        bad_num = []
+        good_center = []
+        bad_center = [] 
+        for key,value in top_good.items():
+            good_center.append(count_dict[key])
+            for j in value:
+                good_num.append(count_dict[j])
+        good_num = np.array(good_num)
+        np.save('cache/'+hotel_name+'good_num.npy',good_num)
+        good_center = np.array(good_center)
+        np.save('cache/'+hotel_name+'good_center.npy',good_center)
 
         keyword_clustering.data = bad_sentence
         top_bad = keyword_clustering.clustering()
         with open('cache/'+hotel_name+'top_bad.json', 'w') as f:
             json.dump(top_bad, f)
+        count_dict = bad_sentence.keyword.value_counts()
+        for key,value in top_bad.items():
+            bad_center.append(count_dict[key])
+            for j in value:
+                bad_num.append(count_dict[j])
+        bad_num = np.array(bad_num)
+        np.save('cache/'+hotel_name+'bad_num.npy',bad_num)
+        bad_center = np.array(bad_center)
+        np.save('cache/'+hotel_name+'bad_center.npy',bad_center)
 

@@ -25,9 +25,11 @@
         {% for key, value in top_good.items %}
 
           {% if keyowrd == key %}
-            <h2 class="current_page_item"> <a   href="{% url 'top_keyowrd' hotel_name forloop.counter key %}">{{key}}</a></h2>
+            <h2 class="current_page_item"> <a   href="{% url 'top_keyowrd' hotel_name forloop.counter key %}">{{key}}({{good_center|slice:forloop.counter|last}})</a></h2>
           {% else %}
-            <h2> <a  href="{% url 'top_keyowrd' hotel_name id key %}">{{key}}</a></h2>
+ 
+            <h2> <a  href="{% url 'top_keyowrd' hotel_name id key %}">{{key}}({{good_center|slice:forloop.counter|last}})</a></h2>
+
           {% endif %}
 
           {% if value|length > 0 %} 
@@ -35,11 +37,11 @@
               {% for word in value %}
                 {% if word == keyowrd %}
                   <li class="current_page_item">
-                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}</a>
+                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}({{good_num|slice:forloop.counter|last}})</a>
                   </li>
                 {% else %}
                   <li>
-                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}</a>
+                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}({{good_num|slice:forloop.counter|last}})</a>
                   </li>
                 {% endif %}
               {% endfor %}
@@ -54,9 +56,9 @@
     <li>
       {% for  key, value in top_bad.items %}
         {% if keyowrd == key %}
-          <h2 class="current_page_item"> <a   href="{% url 'top_keyowrd' hotel_name forloop.counter key %}">{{key}}</a></h2>
+          <h2 class="current_page_item"> <a   href="{% url 'top_keyowrd' hotel_name forloop.counter key %}">{{key}}({{bad_center|slice:forloop.counter|last}})</a></h2>
         {% else %}
-          <h2> <a  href="{% url 'top_keyowrd' hotel_name id key %}">{{key}}</a></h2>
+          <h2> <a  href="{% url 'top_keyowrd' hotel_name id key %}">{{key}}({{bad_center|slice:forloop.counter|last}})</a></h2>
         {% endif %}
 
         {% if value|length > 0 %} 
@@ -64,11 +66,11 @@
               {% for word in value %}
                 {% if word == keyowrd %}
                   <li class="current_page_item">
-                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}</a>
+                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}({{bad_num|slice:forloop.counter|last}})</a>
                   </li>
                 {% else %}
                   <li>
-                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}</a>
+                    <a  href="{% url 'top_keyowrd' hotel_name id word %}">{{word}}({{bad_num|slice:forloop.counter|last}})</a>
                   </li>
                 {% endif %}
               {% endfor %}
@@ -91,17 +93,17 @@
   <div id="keyword">                                                                   
     <ul>
       {%if id > good_keyword_size|add:bad_keyword_size or id is None %} 
-        <li  class="current_page_item"><a href="{% url 'sidebar' hotel_name 2%}">All</a></li>
-        <li><a href="{% url 'sidebar' hotel_name 1%}">Advantage</a></li>
-        <li><a href="{% url 'sidebar' hotel_name 0%}">Disadvantage</a></li>
+        <li  class="current_page_item"><a href="{% url 'sidebar' hotel_name 2%}">All({{all_num}})</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 1%}">Advantage({{advantage_num}})</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 0%}">Disadvantage({{disadvantage_num}})</a></li>
       {% elif id <= good_keyword_size  %}
-        <li><a href="{% url 'sidebar' hotel_name 2%}">All</a></li>
-        <li  class="current_page_item"><a href="{% url 'sidebar' hotel_name 1%}">Advantage</a></li>
-        <li><a href="{% url 'sidebar' hotel_name 0%}">Disadvantage</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 2%}">All({{all_num}})</a></li>
+        <li  class="current_page_item"><a href="{% url 'sidebar' hotel_name 1%}">Advantage({{advantage_num}})</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 0%}">Disadvantage({{disadvantage_num}})</a></li>
       {% else %}
-        <li><a href="{% url 'sidebar' hotel_name 2%}">All</a></li>
-        <li><a href="{% url 'sidebar' hotel_name 1%}">Advantage</a></li>
-        <li class="current_page_item"><a href="{% url 'sidebar' hotel_name 0%}">Disadvantage</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 2%}">All({{all_num}})</a></li>
+        <li><a href="{% url 'sidebar' hotel_name 1%}">Advantage({{advantage_num}})</a></li>
+        <li class="current_page_item"><a href="{% url 'sidebar' hotel_name 0%}">Disadvantage({{disadvantage_num}})</a></li>
       {% endif %}
     </ul>
 
@@ -137,7 +139,7 @@
 
             <tr role="row">
                 <th style='text-align:center;vertical-align:middle' aria-controls="NER">Comment</th>
-                <th  class = 'none' aria-controls="NER"   >original comment</th>
+                <th  class = 'none' aria-controls="NER"   >Original Comment</th>
             </tr>
         </thead>
         <tbody>
@@ -146,7 +148,7 @@
           <tr >  
               {% if sen_label == 0 %}
                 {% if sen_label == ground_truth %}
-                  <td class="dtr-control sorting_1" style="background-color:rgb(255, 158, 158);text-align:center;vertical-align:middle" > 
+                  <td class="dtr-control sorting_1" style="background-color:rgba(248, 174, 174, 0.767);text-align:center;vertical-align:middle" > 
                 {% else %}
                   <td class="dtr-control sorting_1" style="background-color:rgb(15, 255, 7);text-align:center;vertical-align:middle" > 
                     <span style="font-weight:bold;">
@@ -166,7 +168,7 @@
                   </td>
               {% elif sen_label == 1 %}
                 {% if sen_label == ground_truth %}
-                  <td class="dtr-control sorting_1" style="background-color:rgb(158, 228, 255);text-align:center;vertical-align:middle" >
+                  <td class="dtr-control sorting_1" style="background-color:rgba(158, 228, 255, 0.753);text-align:center;vertical-align:middle" >
                 {% else %}
                   <td class="dtr-control sorting_1" style="background-color:rgb(15, 255, 7);text-align:center;vertical-align:middle" >
                     <span style="font-weight:bold;">
@@ -206,6 +208,10 @@
             $("#NER").DataTable({
                 'ordering':false,
                 searching: true, //關閉filter功能
+                "columns": [
+                  null,
+                  { "searchable": false }
+                ] ,
                 responsive: {
                   details: {
                     display: $.fn.dataTable.Responsive.display.modal( {

@@ -4,8 +4,8 @@ import pandas as pd
 import collections
 class Keyword_Merge:
     def __init__(self,model_path,original_path):
-        self.model = gensim.models.KeyedVectors.load_word2vec_format(model_path)
-        self.original_model =  gensim.models.KeyedVectors.load_word2vec_format(model_path)
+        self.model = gensim.models.KeyedVectors.load_word2vec_format(model_path) 
+        self.original_model =  gensim.models.KeyedVectors.load_word2vec_format(original_path,binary=True)
         self.keyword = {}
     def merge(self,all_keyword,sentence_label):
         keyword = {}
@@ -22,7 +22,7 @@ class Keyword_Merge:
                 try:
                     sim = self.model.similarity(s1,s2)
                     sim2 = self.original_model.similarity(s1,s2)
-                    if(sim >= 0.45 or sim2 >=0.5):
+                    if(sim >= 0.5 or sim2 >=0.6):
                         keyword[s1].append(s2)
                         all_keyword[j]=""
                 except:
@@ -68,7 +68,7 @@ class Keyword_Merge:
                 try:
                     sim = self.model.similarity(s1,s2)
                     sim2 = self.original_model.similarity(s1,s2)
-                    if(sim >= 0.45 or sim2 >=0.5):
+                    if(sim >= 0.5 or sim2 >=0.6):
                         adj[s1].append(s2)
                         all_adj[j]=""
                 except:
