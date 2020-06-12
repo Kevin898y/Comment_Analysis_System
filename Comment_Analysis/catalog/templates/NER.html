@@ -106,7 +106,6 @@
         <li class="current_page_item"><a href="{% url 'sidebar' hotel_name 0%}">Disadvantage({{disadvantage_num}})</a></li>
       {% endif %}
     </ul>
-
   </div>
 
   <div id="keyword">
@@ -127,6 +126,7 @@
     <meta charset="utf-8" />
     <title>Client Side jQuery DataTables</title>
     <!--引用css-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.1/semantic.min.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/dataTables.semanticui.min.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css" />
@@ -134,27 +134,37 @@
   </head>
 
   <body>
-    <table id="NER" class="ui celled table nowrap dataTable no-footer dtr-inline collapsed" style="width: 100%;" role="grid" aria-describedby="example_info"  >
+    <input type="text" id="inbox1" placeholder="Cluster Search" style="margin-bottom:10px;margin-left:10px;float:right;padding:2px;" />
+		<button type="button" id="btn1" style="margin-bottom:10px;float:right"><i class="fa fa-search"></i></button>
+		<br /><br />
+		<input type="text" id="inbox2" placeholder="Keyword Search" style="margin-bottom:15px;margin-left:10px;float:right;padding:2px;" />
+    <button type="button" id="btn2" style="margin-bottom:15px;float:right"><i class="fa fa-search"></i></button>
+    
+    <table id="NER" class="ui celled table nowrap dataTable no-footer dtr-inline collapsed" style="width: 100%;" role="grid" aria-describedby="NER_info"  >
         <thead>
 
             <tr role="row">
                 <th style='text-align:center;vertical-align:middle' aria-controls="NER">Comment</th>
-                <th  class = 'none' aria-controls="NER"   >Original Comment</th>
+                <th class = 'none' aria-controls="NER">Original Comment</th>
+                <th class='none' aria-controls="NER">Cluster</th>
             </tr>
         </thead>
         <tbody>
 
-          {% for ground_truth,sen_label,comm,original in data %}
+          {% for ground_truth,sen_label,comm,original,cluster in data %}
           <tr >  
               {% if sen_label == 0 %}
-                {% if sen_label == ground_truth %}
-                  <td class="dtr-control sorting_1" style="background-color:rgba(248, 174, 174, 0.767);text-align:center;vertical-align:middle" > 
-                {% else %}
-                  <td class="dtr-control sorting_1" style="background-color:rgb(15, 255, 7);text-align:center;vertical-align:middle" > 
-                    <span style="font-weight:bold;">
-                      truth: {{ground_truth}}&nbsp;&nbsp;pred: {{sen_label}}&nbsp;&nbsp;
-                    </span>
-                {% endif %}
+                {% comment %} 
+                  <!-- {% if sen_label == ground_truth %}
+                    <td class="dtr-control sorting_1" style="background-color:rgba(248, 174, 174, 0.767);text-align:center;vertical-align:middle" > 
+                  {% else %}
+                    <td class="dtr-control sorting_1" style="background-color:rgb(15, 255, 7);text-align:center;vertical-align:middle" > 
+                      <span style="font-weight:bold;">
+                        truth: {{ground_truth}}&nbsp;&nbsp;pred: {{sen_label}}&nbsp;&nbsp;
+                      </span>
+                  {% endif %} -->
+                {% endcomment %}
+                <td class="dtr-control sorting_1" style="background-color:rgba(248, 174, 174, 0.767);text-align:center;vertical-align:middle" >
                   {% for token,label in comm %}
                     {% if label == "B-KEY" %}
                       <font color="red">{{token}}</font>
@@ -165,16 +175,21 @@
                     {% endif %}
                   {% endfor %}
                   
-                  </td>
+                </td>
               {% elif sen_label == 1 %}
-                {% if sen_label == ground_truth %}
-                  <td class="dtr-control sorting_1" style="background-color:rgba(158, 228, 255, 0.753);text-align:center;vertical-align:middle" >
-                {% else %}
-                  <td class="dtr-control sorting_1" style="background-color:rgb(15, 255, 7);text-align:center;vertical-align:middle" >
-                    <span style="font-weight:bold;">
-                      truth: {{ground_truth}}&nbsp;&nbsp;pred: {{sen_label}}&nbsp;&nbsp;
-                    </span> 
-                {% endif %}
+                {% comment %} 
+                  <!-- {% if sen_label == ground_truth %}
+                    <td class="dtr-control sorting_1" style="background-color:rgba(158, 228, 255, 0.753);text-align:center;vertical-align:middle" >
+                  {% else %}
+                    <td class="dtr-control sorting_1" style="background-color:rgb(15, 255, 7);text-align:center;vertical-align:middle" >
+                      <span style="font-weight:bold;">
+                        truth: {{ground_truth}}&nbsp;&nbsp;pred: {{sen_label}}&nbsp;&nbsp;
+                      </span> 
+                  {% endif %} -->
+                {% endcomment %}
+                
+                <td class="dtr-control sorting_1" style="background-color:rgba(158, 228, 255, 0.753);text-align:center;vertical-align:middle" >
+
                 {% for token,label in comm %}
                     {% if label == "B-KEY"%}
                       <font color="red">{{token}}</font>
@@ -188,6 +203,7 @@
               {% endif %}
 
               <td style="text-align:center;vertical-align:middle;display: none;">{{original}}</td>
+              <td style="text-align:center;vertical-align:middle;display: none;">{{cluster}}</td>
           </tr>
           {% endfor %}
        
@@ -203,29 +219,40 @@
     <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.4/js/responsive.semanticui.min.js"></script>
     
     <script type="text/javascript">
-        $(function () {
+        $(function(){
 
-            $("#NER").DataTable({
-                'ordering':false,
-                searching: true, //關閉filter功能
-                "columns": [
-                  null,
-                  { "searchable": false }
-                ] ,
-                responsive: {
-                  details: {
-                    display: $.fn.dataTable.Responsive.display.modal( {
-                      header: function ( row ) {
-                        var data = row.data();
-                        return 'Details for ';
-                      }
-                    } ),
-                    renderer: $.fn.dataTable.Responsive.renderer.tableAll( {
-                      tableClass: 'ui table'
-                    } )
-                  }
+          var table =$("#NER").DataTable({
+              'ordering':false,
+              "dom": '<"top"l>rt<"bottom"ip><"clear">',
+              searching: true, //關閉filter功能
+              "columns": [
+                { title: "Comment" },
+                { title: "Original Comment" ,"searchable": false},
+                { title: "Cluster" }
+              ] ,
+              responsive: {
+                details: {
+                  display: $.fn.dataTable.Responsive.display.modal( {
+                    header: function ( row ) {
+                      var data = row.data();
+                      return 'Details for ';
+                    }
+                  } ),
+                  renderer: $.fn.dataTable.Responsive.renderer.tableAll( {
+                    tableClass: 'ui table'
+                  } )
                 }
-            });
+              }
+          });
+          $("#btn1").click(function(){
+            var item = $("#inbox1").val();
+            table.column(2).search(item).draw();
+          });
+          
+          $("#btn2").click(function(){
+            var item = $("#inbox2").val();
+            table.column(0).search(item).draw();
+          });
         });
     </script>
   </body>
@@ -233,3 +260,4 @@
 </div>
 
 {% endblock %}
+

@@ -33,25 +33,26 @@
 
 
 {% block title %}
-
-<div id="header-wrapper">
+<!-- <div id="header-wrapper">
 	<div id="header">
 		<div id="logo">
 			<h1><a href="#"> <p>Comment <span>Analysis</p></span></a></h1>
-			<!-- <p>Design by <a href="http://templated.co" rel="nofollow">TEMPLATED</a></p> -->
 		</div>
 	</div>
-</div>
+</div> -->
 {% endblock %}
 
 <div id="wrapper">
 	<!-- end #header -->
 	<div id="page">
 			{% block content %}
-				<div id="content">
-					
-					
-					<h2>Searh Here:</h2>
+			<div id="content3">
+				<div>
+					<h1> <p>Comment <span>Analysis</p></span></h1>
+					<!-- <h2>Searh Here:</h2> -->
+				</div>
+			</div>
+				<div id="content2"  >
 					<div id="search" >
 						<form method="post" id="search-text">
 							<table >
@@ -64,33 +65,21 @@
 						</form>
 					</div>
 					<div style="clear: both;">&nbsp;</div>
+					
 				</div>
+
 			{% endblock %}  <!-- end #content -->
-			
 			<div id="sidebar">
 				{% block sidebar %}
-
-				<!-- <ul>
-					<li>
-						<h2>Categories</h2>
-						<ul>
-							<li><a href="#">Aliquam libero</a></li>
-							<li><a href="#">Consectetuer adipiscing elit</a></li>
-							<li><a href="#">Metus aliquam pellentesque</a></li>
-							<li><a href="#">Suspendisse iaculis mauris</a></li>
-							<li><a href="#">Urnanet non molestie semper</a></li>
-							<li><a href="#">Proin gravida orci porttitor</a></li>
-						</ul>
-					</li>
-
-				</ul> -->
 				
 				{% endblock %}
 			</div>
-			<!-- end #sidebar -->
-			<div style="clear: both;">&nbsp;</div>
+		
 	</div>
 	<!-- end #page -->
+	<div id="footer">
+		<p>&copy; Untitled. | Photos by <a href="http://fotogrph.com/">Fotogrph</a> | Design by <a href="http://templated.co" rel="nofollow">TEMPLATED</a>.</p>
+	</div>
 </div>
 
 
@@ -98,16 +87,8 @@
 
 
 
-<pre>
 
 
-
-
-</pre>
-
-<div id="footer">
-	<p>&copy; Untitled. | Photos by <a href="http://fotogrph.com/">Fotogrph</a> | Design by <a href="http://templated.co" rel="nofollow">TEMPLATED</a>.</p>
-</div>
 <!-- end #footer -->
 </body>
 </html>

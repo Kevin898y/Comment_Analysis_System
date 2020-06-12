@@ -190,7 +190,7 @@ class Bert_NER:
             data['keyword'] = sentence_label
             data['adj'] = keyword_merge.adj_merge(data['adj'])
             data = data.drop_duplicates()
-            data.to_csv('cache/'+hotel_name+'_to_CoNLL.csv',index = False)
+            # data.to_csv('cache/'+hotel_name+'_to_CoNLL.csv',index = False)
 
         Filter_Good = data['sentiment']==1
         Filter_Bad = data['sentiment'] == 0
@@ -204,9 +204,7 @@ class Bert_NER:
             json.dump(top_good, f)
         count_dict = good_sentence.keyword.value_counts()
         good_num = []
-        bad_num = []
         good_center = []
-        bad_center = [] 
         for key,value in top_good.items():
             good_center.append(count_dict[key])
             for j in value:
@@ -216,6 +214,8 @@ class Bert_NER:
         good_center = np.array(good_center)
         np.save('cache/'+hotel_name+'good_center.npy',good_center)
 
+        bad_num = []
+        bad_center = [] 
         keyword_clustering.data = bad_sentence
         top_bad = keyword_clustering.clustering()
         with open('cache/'+hotel_name+'top_bad.json', 'w') as f:
@@ -229,4 +229,42 @@ class Bert_NER:
         np.save('cache/'+hotel_name+'bad_num.npy',bad_num)
         bad_center = np.array(bad_center)
         np.save('cache/'+hotel_name+'bad_center.npy',bad_center)
+
+        ##cluster
+        good_set =[]
+        for key,value in top_good.items():
+            temp = set()
+            temp.add(key)
+            for i in value:
+                temp.add(i)
+            good_set.append(temp)
+
+        bad_set =[]
+        for key,value in top_bad.items():
+            temp = set()
+            temp.add(key)
+            for i in value:
+                temp.add(i)
+            bad_set.append(temp)
+        cluster_all = []
+        for keyword,sentiment in zip(data['keyword'],data['sentiment']):
+            Find = False
+            if sentiment ==1:
+                for cluster in good_set:
+                    if keyword in cluster:
+                        cluster_all.append(" ".join(cluster))
+                        Find = True
+                if not Find:
+                    cluster_all.append('none')
+            if sentiment ==0:
+                for cluster in bad_set:
+                    if keyword in cluster: 
+                        cluster_all.append(" ".join(cluster))
+                        Find = True
+                if not Find:
+                    cluster_all.append('none')
+        data["cluster"] = cluster_all
+        data.to_csv('cache/'+hotel_name+'_to_CoNLL.csv',index = False)
+            
+
 

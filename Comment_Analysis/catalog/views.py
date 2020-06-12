@@ -77,7 +77,11 @@ def top_keyowrd(request,hotel_name, id, keyowrd): #to do
     if id >len(top_good):
         Filter = all_sentence[Filter_Bad] ['keyword']==keyowrd
         clean_data = all_sentence[Filter_Bad][Filter]
-        data = list(zip(clean_data['ground_truth'], [0]*len(clean_data['keyword']),clean_data['sentence'],clean_data['original']  ))
+        data = list(zip(clean_data['ground_truth'], 
+                        [0]*len(clean_data['keyword']),
+                        clean_data['sentence'],
+                        clean_data['original'],
+                        clean_data["cluster"] ))
         all_adj = {}
         for i in clean_data['adj']:
             for adj in i:
@@ -95,7 +99,11 @@ def top_keyowrd(request,hotel_name, id, keyowrd): #to do
     else :
         Filter = all_sentence[Filter_Good] ['keyword']==keyowrd
         clean_data = all_sentence[Filter_Good][Filter]
-        data = list(zip(clean_data['ground_truth'], [1]*len(clean_data['keyword']),clean_data['sentence'],clean_data['original'] ))
+        data = list(zip(clean_data['ground_truth'],
+                        [1]*len(clean_data['keyword']),
+                        clean_data['sentence'],
+                        clean_data['original'],
+                        clean_data["cluster"] ))
         all_adj = {}
         for i in clean_data['adj']:
             for adj in i:
@@ -109,7 +117,7 @@ def top_keyowrd(request,hotel_name, id, keyowrd): #to do
             if i[1]>len(clean_data['keyword'])/12 and i[1]>=3:###
                 adj_top.append(i[0])
         adjtop = adj_top
-    
+     
     context = {
         'all_num':len(sentence),
         'advantage_num':len(sentence[sentence['sentiment']== 1]),
@@ -171,9 +179,10 @@ def top_adj(request,hotel_name,id,keyowrd,adj_num ): #to do
                 adj_top.append(i[0])
 
         data = []
-        for ground_truth,keyword,sentence,adj,original in zip(clean_data['ground_truth'], [0]*len(clean_data['keyword']),clean_data['sentence'],clean_data['adj'],clean_data['original'] ):
+        for ground_truth,keyword,sentence,adj,original,cluster in zip(clean_data['ground_truth'], [0]*len(clean_data['keyword']),\
+                                                                     clean_data['sentence'],clean_data['adj'],clean_data['original'],clean_data["cluster"]):
             if adj_top[adj_num] in adj:
-                data.append((ground_truth,keyword,sentence,original))
+                data.append((ground_truth,keyword,sentence,original,cluster))
 
     else :
         Filter = all_sentence[Filter_Good]['keyword']==keyowrd
@@ -193,9 +202,10 @@ def top_adj(request,hotel_name,id,keyowrd,adj_num ): #to do
 
 
         data = []
-        for ground_truth,keyword,sentence,adj,original in zip(clean_data['ground_truth'], [1]*len(clean_data['keyword']),clean_data['sentence'],clean_data['adj'],clean_data['original'] ):
+        for ground_truth,keyword,sentence,adj,original,cluster in zip(clean_data['ground_truth'], [1]*len(clean_data['keyword']),\
+                                                                    clean_data['sentence'],clean_data['adj'],clean_data['original'],clean_data["cluster"] ):
             if adj_top[adj_num] in adj:
-                data.append((ground_truth,keyword,sentence,original))
+                data.append((ground_truth,keyword,sentence,original,cluster))
 
     
     context = {
@@ -223,7 +233,6 @@ def sidebar(request, slug,id): #to do
     hotel_name = slug
     # for test
     data = pd.read_csv('cache/'+hotel_name+'_to_CoNLL.csv')
-    data['adj'] = data['adj'].map(lambda x: eval(x))
     data['sentence'] = data['sentence'].map(lambda x: eval(x))
     Filter = ~data['uid'].duplicated() ##UID
     all_sentence = data[Filter]
@@ -240,19 +249,28 @@ def sidebar(request, slug,id): #to do
     if id == 0: #disadvantage
         temp = len(top_good)+len(top_bad)+1
         Filter2 = all_sentence['sentiment']== 0
-        data = list(zip(all_sentence[Filter2]['ground_truth'].to_list(),all_sentence[Filter2]['sentiment'].tolist()\
-            ,all_sentence[Filter2]['sentence'].tolist(),all_sentence[Filter2]['original']))  
+        data = list(zip(all_sentence[Filter2]['ground_truth'].to_list(),
+                        all_sentence[Filter2]['sentiment'].tolist(),
+                        all_sentence[Filter2]['sentence'].tolist(),
+                        all_sentence[Filter2]['original'],
+                        all_sentence[Filter2]['cluster']))  
 
     elif id == 1: #advantage
         temp =  len(top_good)
         Filter2 = all_sentence['sentiment']== 1
-        data = list(zip(all_sentence[Filter2]['ground_truth'].to_list(),all_sentence[Filter2]['sentiment'].tolist()\
-            ,all_sentence[Filter2]['sentence'].tolist(),all_sentence[Filter2]['original']))
+        data = list(zip(all_sentence[Filter2]['ground_truth'].to_list(),
+                        all_sentence[Filter2]['sentiment'].tolist(),
+                        all_sentence[Filter2]['sentence'].tolist(),
+                        all_sentence[Filter2]['original'],
+                        all_sentence[Filter2]['cluster']))  
 
     else: #all
         temp = len(top_good)+len(top_bad)+2
-        data = list(zip(all_sentence['ground_truth'].to_list(),all_sentence['sentiment'].tolist()\
-            ,all_sentence['sentence'].tolist(),all_sentence['original']))
+        data = list(zip(all_sentence['ground_truth'].to_list(),
+                        all_sentence['sentiment'].tolist(),
+                        all_sentence['sentence'].tolist(),
+                        all_sentence['original'],
+                        all_sentence['cluster']))
 
     context = {
         'all_num':len(all_sentence),
@@ -360,15 +378,16 @@ def Ner(request,slug):
         pred = ner.prediction()
         ner.to_CoNLL(pred,hotel_name)
     
-
     data = pd.read_csv('cache/'+hotel_name+'_to_CoNLL.csv')
-    # data['adj'] = data['adj'].map(lambda x: eval(x))
     data['sentence'] = data['sentence'].map(lambda x: eval(x))
     Filter = ~data['uid'].duplicated() ##UID
     all_sentence = data[Filter]
-    
-    data = list(zip(all_sentence['ground_truth'].to_list(),\
-        all_sentence['sentiment'].tolist(),all_sentence['sentence'].tolist(),all_sentence['original']))
+
+    data = list(zip(all_sentence['ground_truth'].to_list(),
+                    all_sentence['sentiment'].tolist(),
+                    all_sentence['sentence'].tolist(),
+                    all_sentence['original'],
+                    all_sentence[Filter]["cluster"]))
     
     context = {
         'hotel_name':hotel_name,
